@@ -1,6 +1,6 @@
-# Enterprise Portal Starter Template Rules
+# Real Estate Management Portal Rules
 
-Lean rules for this enterprise template project.
+Lean rules for this Real Estate Management project.
 
 ## Stack
 

@@ -1,6 +1,6 @@
-# Template Dashboard Frontend
+# Real Estate Management Dashboard Frontend
 
-Frontend web application for the ZenaTech Template Portal. Built with **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4**, and **shadcn/ui**. Features a responsive AppShell layout, Microsoft Entra ID authentication, RBAC management views, audit log inspectors, and real-time SSE telemetry.
+Frontend web application for the ZenaTech Real Estate Management Portal. Built with **React 19**, **TypeScript**, **Vite 8**, **Tailwind CSS v4**, and **shadcn/ui**. Features a responsive AppShell layout, Microsoft Entra ID authentication, RBAC management views, audit log inspectors, and real-time SSE telemetry.
 
 ---
 
@@ -88,7 +88,7 @@ flowchart TD
 ## Directory Structure
 
 ```text
-internal_portal_template_frontend/
+internal_portal_real_estate_management_dashboard_front/
 ├── public/                 # Static assets, branding, and icons
 ├── src/
 │   ├── components/         # Shared UI components

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Template Portal",
-    "slug": "template-portal",
+    "name": "Real Estate Management",
+    "slug": "real-estate-management",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -10,7 +10,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.zenatech.template"
+      "package": "com.zenatech.realestatemanagement"
     }
   }
 }

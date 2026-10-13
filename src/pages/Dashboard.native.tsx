@@ -45,7 +45,7 @@ export default function Dashboard() {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.userName}>{user?.full_name || "Template Manager"}</Text>
+            <Text style={styles.userName}>{user?.full_name || "Real Estate Manager"}</Text>
           </View>
           <NativeButton
             title="Sign out"
@@ -111,10 +111,10 @@ export default function Dashboard() {
         </View>
 
         {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Template Services</Text>
+        <Text style={styles.sectionTitle}>Real Estate Management Services</Text>
         <NativeCard style={styles.serviceCard}>
           <NativeCardHeader>
-            <NativeCardTitle style={styles.serviceTitle}>Enterprise Template Portal</NativeCardTitle>
+            <NativeCardTitle style={styles.serviceTitle}>Real Estate Management Portal</NativeCardTitle>
             <NativeCardDescription>
               Access enterprise resources, manage operational workflows, and view system audit trails.
             </NativeCardDescription>

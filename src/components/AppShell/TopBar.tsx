@@ -170,7 +170,7 @@ export default function TopBar({ onToggleSidebar }: { onToggleSidebar?: () => vo
     }
 
     sendWindowsNotification(
-      "Enterprise Portal",
+      "Real Estate Management",
       "This is a test notification! Desktop alerts are configured correctly.",
       "/dashboard",
       (url) => navigate(url)

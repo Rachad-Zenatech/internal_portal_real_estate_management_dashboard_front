@@ -103,13 +103,13 @@ export default function Dashboard() {
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold tracking-wide text-white/90 border border-white/15">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Enterprise Starter Template • RBAC Enabled</span>
+            <span>Real Estate Management • RBAC Enabled</span>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-tight">
             Welcome back, {user?.full_name || "Administrator"}
           </h1>
           <p className="text-sm sm:text-base text-primary-foreground/80 leading-relaxed max-w-2xl">
-            This repository is structured as a production-grade template with role-based access control (RBAC),
+            Real Estate Management system structured with role-based access control (RBAC),
             fine-grained permissions, real-time event streaming, and modular architecture.
           </p>
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -249,15 +249,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Starter Template Guide */}
+      {/* Architecture & Developer Guide */}
       <Card className="border-border/60 bg-muted/20">
         <CardHeader>
           <div className="flex items-center gap-2 text-primary mb-1">
             <Code2 className="h-5 w-5" />
-            <CardTitle className="text-lg font-bold">Template Architecture & Cloning Guide</CardTitle>
+            <CardTitle className="text-lg font-bold">Real Estate Management Architecture & Developer Guide</CardTitle>
           </div>
           <CardDescription className="text-xs leading-relaxed">
-            Key patterns and conventions for developing applications on top of this template.
+            Key patterns and conventions for developing applications in Real Estate Management.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-xs text-muted-foreground leading-relaxed">

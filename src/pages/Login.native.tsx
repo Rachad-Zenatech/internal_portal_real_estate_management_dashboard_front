@@ -125,7 +125,7 @@ export default function Login() {
 
         <NativeCard style={styles.card}>
           <NativeCardHeader style={styles.header}>
-            <NativeCardTitle style={styles.title}>Template</NativeCardTitle>
+            <NativeCardTitle style={styles.title}>Real Estate Management</NativeCardTitle>
             <NativeCardDescription style={styles.description}>
               Enterprise Portal Single Sign-On
             </NativeCardDescription>
