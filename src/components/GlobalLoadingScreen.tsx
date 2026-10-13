@@ -52,7 +52,6 @@ export default function GlobalLoadingScreen() {
   const isExtraction =
     title.toLowerCase().includes("extract") ||
     title.toLowerCase().includes("ocr") ||
-    title.toLowerCase().includes("quote") ||
     title.toLowerCase().includes("pdf");
 
   return (
