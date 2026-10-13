@@ -150,9 +150,10 @@ export default function PaymentsPage() {
     });
   }, [obligations, searchQuery]);
 
-  const getStatusBadge = (status: string, dueDate?: string) => {
+  const getStatusBadge = (status?: string, dueDate?: string) => {
+    const currentStatus = status || 'PENDING';
     const today = new Date().toISOString().split('T')[0];
-    const isOverdue = status === 'OVERDUE' || (status === 'PENDING' && dueDate && dueDate < today);
+    const isOverdue = currentStatus === 'OVERDUE' || (currentStatus === 'PENDING' && dueDate && dueDate < today);
 
     if (status === 'PAID') {
       return (
