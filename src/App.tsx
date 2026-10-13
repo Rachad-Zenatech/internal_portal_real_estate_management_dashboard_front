@@ -8,6 +8,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const AppShell = lazy(() => import("./components/AppShell/AppShell"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const PortfolioPage = lazy(() => import("./pages/RealEstate/PortfolioPage"));
+const BookingsPage = lazy(() => import("./pages/RealEstate/BookingsPage"));
+const DocumentsPage = lazy(() => import("./pages/RealEstate/DocumentsPage"));
+const PaymentsPage = lazy(() => import("./pages/RealEstate/PaymentsPage"));
+
 const Users = lazy(() => import("./pages/Configurations/Users"));
 const Roles = lazy(() => import("./pages/Configurations/Roles"));
 const UserRoleAssignment = lazy(() => import("./pages/Configurations/UserRoleAssignment"));
@@ -67,7 +72,42 @@ function App() {
                 }
               />
 
-              {/* Configuration Routes */}
+              {/* Real Estate Domain Routes */}
+              <Route path="/real-estate" element={<Navigate to="/real-estate/portfolio" replace />} />
+              <Route
+                path="/real-estate/portfolio"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_PORTFOLIO">
+                    <PortfolioPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/real-estate/bookings"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_BOOKINGS">
+                    <BookingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/real-estate/documents"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_DOCUMENTS">
+                    <DocumentsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/real-estate/payments"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_PAYMENTS">
+                    <PaymentsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Configuration & RBAC Routes */}
               <Route path="/configuration" element={<Navigate to="/configurations/users" replace />} />
               <Route path="/configurations" element={<Navigate to="/configurations/users" replace />} />
 
@@ -217,3 +257,4 @@ function App() {
 }
 
 export default App;
+

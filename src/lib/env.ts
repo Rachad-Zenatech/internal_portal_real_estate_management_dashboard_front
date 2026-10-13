@@ -51,5 +51,5 @@ export function getApiBaseUrl(): string {
   ) {
     return window.location.origin;
   }
-  return "http://localhost:8900";
+  return "http://localhost:8007";
 }

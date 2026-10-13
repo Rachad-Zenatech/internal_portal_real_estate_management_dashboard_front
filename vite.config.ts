@@ -5,7 +5,7 @@ import path from "path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiTarget = env.VITE_API_BASE_URL || "http://localhost:8900";
+  const apiTarget = env.VITE_API_BASE_URL || "http://localhost:8007";
 
   return {
     plugins: [
@@ -32,10 +32,10 @@ export default defineConfig(({ mode }) => {
         ".js",
       ],
     },
-    // Pin the dev server to 6000 so it matches the backend's Microsoft SSO
+    // Pin the dev server to 5177 so it matches the backend's Microsoft SSO
     // redirect target (FRONTEND_URL) and CORS_ALLOWED_ORIGINS.
     server: {
-      port: 6000,
+      port: 5177,
       strictPort: true,
       proxy: {
         "/api": {

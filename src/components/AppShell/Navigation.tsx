@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  Building2,
   ShieldCheck,
   FileClock,
 } from "lucide-react";
@@ -29,9 +30,20 @@ export const navigation: NavigationItem[] = [
     navigationCode: "DASHBOARD",
   },
   {
+    label: "Company Real Estate",
+    icon: Building2,
+    section: "REAL ESTATE",
+    subItems: [
+      { label: "Global Portfolio (~40 Sites)", path: "/real-estate/portfolio", navigationCode: "REAL_ESTATE_PORTFOLIO" },
+      { label: "Availability & Stays", path: "/real-estate/bookings", navigationCode: "REAL_ESTATE_BOOKINGS" },
+      { label: "Document Vault & Floor Plans", path: "/real-estate/documents", navigationCode: "REAL_ESTATE_DOCUMENTS" },
+      { label: "Rent, CAM & Taxes", path: "/real-estate/payments", navigationCode: "REAL_ESTATE_PAYMENTS" },
+    ],
+  },
+  {
     label: "System & Security",
     icon: ShieldCheck,
-    section: "ADMINISTRATION",
+    section: "SECURITY & ACCESS",
     subItems: [
       { label: "Users", path: "/configurations/users", navigationCode: "CONFIG_USERS" },
       { label: "Roles", path: "/configurations/roles", navigationCode: "CONFIG_ROLES" },
@@ -44,10 +56,12 @@ export const navigation: NavigationItem[] = [
   {
     label: "Logs & Audit",
     icon: FileClock,
-    section: "ADMINISTRATION",
+    section: "SYSTEM LOGS",
     subItems: [
       { label: "Audit Log", path: "/log/audit", navigationCode: "AUDIT_LOG" },
       { label: "System Logs", path: "/log/system-logs", navigationCode: "AUDIT_LOG" },
     ],
   },
 ];
+
+

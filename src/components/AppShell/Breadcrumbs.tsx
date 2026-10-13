@@ -40,18 +40,23 @@ export default function Breadcrumbs() {
 
   const formatName = (name: string) => {
     const specialNames: Record<string, string> = {
+      dashboard: "Dashboard",
+      "real-estate": "Company Condos",
+      portfolio: "Portfolio Directory",
+      bookings: "Availability & Stays",
+      documents: "Document Vault",
+      payments: "Rent & Tax Tracking",
       users: "Users",
       roles: "Roles",
       "user-role-assignment": "User Role Assignments",
       "role-group-permissions": "Role Group Permissions",
       "role-api-permissions": "Role API Permissions",
       "role-mcp-tool-permissions": "Role MCP Tool Permissions",
-      "audit": "Audit Log",
+      audit: "Audit Log",
       "audit-log": "Audit Log",
       "system-logs": "System Logs",
       configuration: "Configuration",
       configurations: "Configurations",
-      dashboard: "Dashboard",
     };
     const key = name.toLowerCase();
     if (specialNames[key]) {

@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import { appStorage } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -45,9 +46,14 @@ export default function Login() {
           sessionStorage.removeItem("token");
           sessionStorage.removeItem("user");
           sessionStorage.removeItem("ms_id_token");
+          appStorage.removeItem("token");
+          appStorage.removeItem("user");
+          appStorage.removeItem("ms_id_token");
+
           const token = searchParams.get("token");
           if (token) {
             sessionStorage.setItem("token", token);
+            appStorage.setItem("token", token);
           }
           await refreshPermissions();
           toast.success("Successfully logged in");
@@ -60,7 +66,6 @@ export default function Login() {
           setIsLoading(false);
         }
       }
-
     };
 
     handleSsoCallback();
@@ -71,6 +76,12 @@ export default function Login() {
     const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
     const baseUrl = rawBaseUrl.endsWith("/") ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
     window.location.href = `${baseUrl}/api/auth/microsoft/login`;
+  };
+
+  const handleDevLogin = (email = "rachad.quintyne@zenatech.com") => {
+    const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+    const baseUrl = rawBaseUrl.endsWith("/") ? rawBaseUrl.slice(0, -1) : rawBaseUrl;
+    window.location.href = `${baseUrl}/api/auth/dev-login?email=${encodeURIComponent(email)}`;
   };
 
   return (
@@ -96,7 +107,7 @@ export default function Login() {
               Sign in with your @zenatech.com account
             </CardDescription>
           </CardHeader>
-                    <CardContent className="space-y-4">
+          <CardContent className="space-y-4">
             <Button
               onClick={handleLogin}
               className="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
@@ -111,6 +122,18 @@ export default function Login() {
                 "Sign in with Microsoft"
               )}
             </Button>
+
+            {import.meta.env.DEV && (
+              <Button
+                variant="outline"
+                onClick={() => handleDevLogin("rachad.quintyne@zenatech.com")}
+                className="w-full h-11 rounded-xl border-dashed border-blue-400 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 font-medium cursor-pointer transition-colors flex items-center justify-center gap-2"
+                disabled={isLoading}
+              >
+                <ShieldCheck className="h-4 w-4 text-blue-500" />
+                Dev Sign In (Rachad Quintyne)
+              </Button>
+            )}
           </CardContent>
           <CardFooter className="flex justify-center pb-8 pt-4 border-t border-slate-100 dark:border-zinc-800/50 mt-2 bg-slate-50/50 dark:bg-zinc-950/30">
             <p className="text-sm text-slate-500 dark:text-zinc-400">
