@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Template Portal",
+    "slug": "template-portal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.zenatech.template"
+    }
+  }
+}
