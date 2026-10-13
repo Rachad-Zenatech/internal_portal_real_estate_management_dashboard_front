@@ -61,7 +61,7 @@ function getAndroidSdkPaths() {
       if (foundUser) {
         sdkBase = `/mnt/c/Users/${foundUser}/AppData/Local/Android/Sdk`;
       }
-    } catch {}
+    } catch { }
   }
 
   if (!sdkBase) {
@@ -79,7 +79,7 @@ function getAndroidSdkPaths() {
       const adbShim = path.join(binDir, "adb");
       fs.writeFileSync(adbShim, `#!/bin/sh\n"${adbPath}" "$@"\n`, { mode: 0o755 });
     }
-  } catch {}
+  } catch { }
 
   return { adbPath, emulatorPath, isWindows: false };
 }
@@ -95,7 +95,7 @@ function getAvailableAvd(emulatorPath) {
       if (avds.includes("Pixel_7")) return "Pixel_7";
       return avds[0];
     }
-  } catch {}
+  } catch { }
   return "Pixel_7";
 }
 
@@ -156,15 +156,15 @@ async function main() {
     console.log("✅ Android device/emulator is already running and connected.");
   }
 
-  // Configure ADB reverse forwarding for Metro (8090), backend (8900), and Vite (6000)
+  // Configure ADB reverse forwarding for Metro (8090), backend (8900), and Vite (6063)
   try {
     execSync(`"${adbPath}" reverse tcp:8090 tcp:8090`, { stdio: "ignore" });
     execSync(`"${adbPath}" reverse tcp:8900 tcp:8900`, { stdio: "ignore" });
-    execSync(`"${adbPath}" reverse tcp:6000 tcp:6000`, { stdio: "ignore" });
+    execSync(`"${adbPath}" reverse tcp:6063 tcp:6063`, { stdio: "ignore" });
     console.log(
-      "🔗 Reverse port forwarding configured (8090 -> 8090, 8900 -> 8900, 6000 -> 6000)."
+      "🔗 Reverse port forwarding configured (8090 -> 8090, 8900 -> 8900, 6063 -> 6063)."
     );
-  } catch {}
+  } catch { }
 
   // Environment variables for Expo
   const adbDir = path.dirname(adbPath);
