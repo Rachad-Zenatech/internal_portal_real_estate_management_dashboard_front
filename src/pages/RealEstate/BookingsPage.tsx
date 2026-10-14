@@ -51,7 +51,7 @@ export default function BookingsPage() {
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
 
   // New Booking State
-  const [newBooking, setNewBooking] = useState({
+  const [newBooking, setNewBooking] = useState(() => ({
     unit_id: '',
     employee_name: user?.full_name || '',
     employee_email: user?.email || '',
@@ -61,7 +61,7 @@ export default function BookingsPage() {
     guest_count: 1,
     purpose_of_stay: 'Business Travel',
     special_requests: '',
-  });
+  }));
 
   const handleOpenBookingModal = (prefill?: { unit_id?: string; check_in_date?: string }) => {
     if (prefill?.unit_id) {
