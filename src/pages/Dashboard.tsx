@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import SpreadsheetImportModal from './RealEstate/SpreadsheetImportModal';
+import RealtorLocationMapExplorer from '@/components/RealEstate/RealtorLocationMapExplorer';
 
 const REGION_CITIES: Record<string, { city: string; country: string; flag: string; count: number; category: string }[]> = {
   Americas: [
@@ -473,6 +474,26 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Interactive Global Real Estate & Map Explorer (Realtor.com + Google Maps Experience) */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-indigo-600" />
+              <span>Global Property Locations & Interactive Map</span>
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Realtor.com-style location directory with interactive Google Maps navigation. Click any location in the list to fly directly to its address pin and drop down detailed property specs.
+            </p>
+          </div>
+          <Badge variant="outline" className="text-xs px-2.5 py-1 border-indigo-300 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400">
+            Interactive Dual-View (~40 Sites)
+          </Badge>
+        </div>
+
+        <RealtorLocationMapExplorer properties={properties} />
+      </div>
 
       {/* Global Regional Real Estate Footprint Strip */}
       <div className="space-y-3">

@@ -54,6 +54,8 @@ export interface Property {
   source_spreadsheet_ref?: string | null;
   notes?: string | null;
   image_url?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   unit_count?: number;
   available_units?: number;
   units?: Unit[];
