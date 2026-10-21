@@ -30,14 +30,14 @@ export const navigation: NavigationItem[] = [
     navigationCode: "DASHBOARD",
   },
   {
-    label: "Company Real Estate",
+    label: "Real Estate Management",
     icon: Building2,
     section: "REAL ESTATE",
     subItems: [
-      { label: "Global Portfolio (~40 Sites)", path: "/real-estate/portfolio", navigationCode: "REAL_ESTATE_PORTFOLIO" },
-      { label: "Availability & Stays", path: "/real-estate/bookings", navigationCode: "REAL_ESTATE_BOOKINGS" },
-      { label: "Document Vault & Floor Plans", path: "/real-estate/documents", navigationCode: "REAL_ESTATE_DOCUMENTS" },
-      { label: "Rent, CAM & Taxes", path: "/real-estate/payments", navigationCode: "REAL_ESTATE_PAYMENTS" },
+      { label: "Portfolio", path: "/real-estate/portfolio", navigationCode: "REAL_ESTATE_PORTFOLIO" },
+      { label: "Properties", path: "/real-estate/properties", navigationCode: "REAL_ESTATE_PROPERTIES" },
+      { label: "Stays & Availability", path: "/real-estate/stays", navigationCode: "REAL_ESTATE_BOOKINGS" },
+      { label: "Accounting", path: "/real-estate/accounting", navigationCode: "REAL_ESTATE_PAYMENTS" },
     ],
   },
   {

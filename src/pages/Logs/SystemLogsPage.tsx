@@ -353,7 +353,7 @@ export default function SystemLogsPage() {
   }, [logs, total]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col space-y-6 pb-6 p-4 sm:p-6 max-w-[1650px] mx-auto w-full">
+    <div className="flex-1 min-h-0 flex flex-col space-y-6 pb-6 p-4 sm:p-6 w-full">
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

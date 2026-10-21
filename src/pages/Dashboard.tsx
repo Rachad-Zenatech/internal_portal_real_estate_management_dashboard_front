@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +7,6 @@ import ExcelJS from 'exceljs';
 import {
   Building2,
   Calendar,
-  FileText,
   CreditCard,
   ArrowRight,
   CheckCircle2,
@@ -30,43 +29,27 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import SpreadsheetImportModal from './RealEstate/SpreadsheetImportModal';
 
-const REGION_CITIES: Record<string, { city: string; country: string; flag: string; count: number; category: string }[]> = {
-  Americas: [
-    { city: 'Chicago', country: 'USA', flag: '🇺🇸', count: 3, category: 'HQ & Condos' },
-    { city: 'New York', country: 'USA', flag: '🇺🇸', count: 2, category: 'Offices' },
-    { city: 'San Francisco', country: 'USA', flag: '🇺🇸', count: 1, category: 'R&D Center' },
-    { city: 'San Jose', country: 'USA', flag: '🇺🇸', count: 1, category: 'Hardware Lab' },
-    { city: 'Los Angeles', country: 'USA', flag: '🇺🇸', count: 3, category: 'Offices & Condos' },
-    { city: 'Austin', country: 'USA', flag: '🇺🇸', count: 1, category: 'Tech Corridor' },
-    { city: 'Seattle', country: 'USA', flag: '🇺🇸', count: 1, category: 'Cloud Center' },
-    { city: 'Boston', country: 'USA', flag: '🇺🇸', count: 1, category: 'AI Lab' },
-    { city: 'Denver', country: 'USA', flag: '🇺🇸', count: 1, category: 'M&A AeroGrid' },
-    { city: 'Dallas', country: 'USA', flag: '🇺🇸', count: 1, category: 'M&A Apex' },
-    { city: 'Raleigh', country: 'USA', flag: '🇺🇸', count: 1, category: 'M&A CloudPulse' },
-    { city: 'Vancouver', country: 'Canada', flag: '🇨🇦', count: 2, category: 'Office & Condo' },
-    { city: 'Toronto', country: 'Canada', flag: '🇨🇦', count: 1, category: 'Financial Core' },
-    { city: 'Montreal', country: 'Canada', flag: '🇨🇦', count: 1, category: 'Software Studio' },
-  ],
-  EMEA: [
-    { city: 'London', country: 'UK', flag: '🇬🇧', count: 4, category: 'HQ, Mayfair & Condos' },
-    { city: 'Dublin', country: 'Ireland', flag: '🇮🇪', count: 2, category: 'Silicon Docks & Condo' },
-    { city: 'Berlin', country: 'Germany', flag: '🇩🇪', count: 2, category: 'R&D & Condo' },
-    { city: 'Munich', country: 'Germany', flag: '🇩🇪', count: 1, category: 'M&A AeroGrid' },
-    { city: 'Frankfurt', country: 'Germany', flag: '🇩🇪', count: 1, category: 'Financial Branch' },
-    { city: 'Paris', country: 'France', flag: '🇫🇷', count: 1, category: 'La Défense' },
-    { city: 'Amsterdam', country: 'Netherlands', flag: '🇳🇱', count: 1, category: 'Zuidas Tech Hub' },
-    { city: 'Zurich', country: 'Switzerland', flag: '🇨🇭', count: 1, category: 'Wealth & AI' },
-    { city: 'Edinburgh', country: 'UK', flag: '🇬🇧', count: 1, category: 'M&A CloudPulse' },
-    { city: 'Warsaw', country: 'Poland', flag: '🇵🇱', count: 1, category: 'Shared Services' },
-  ],
-  APAC: [
-    { city: 'Singapore', country: 'Singapore', flag: '🇸🇬', count: 2, category: 'APAC HQ & Condo' },
-    { city: 'Dubai', country: 'UAE', flag: '🇦🇪', count: 5, category: 'DIFC & 4 Condos' },
-    { city: 'Tokyo', country: 'Japan', flag: '🇯🇵', count: 1, category: 'Marunouchi' },
-    { city: 'Sydney', country: 'Australia', flag: '🇦🇺', count: 1, category: 'Barangaroo Towers' },
-    { city: 'Bangalore', country: 'India', flag: '🇮🇳', count: 1, category: 'R&D Campus' },
-  ],
-};
+// Helper to map country to Region & Flag
+function getRegionAndFlag(country?: string): { region: 'Americas' | 'EMEA' | 'APAC'; flag: string } {
+  if (!country) return { region: 'Americas', flag: '🌐' };
+  const c = country.toLowerCase().trim();
+  if (c.includes('usa') || c.includes('united states')) return { region: 'Americas', flag: '🇺🇸' };
+  if (c.includes('canada')) return { region: 'Americas', flag: '🇨🇦' };
+  if (c.includes('mexico')) return { region: 'Americas', flag: '🇲🇽' };
+  if (c.includes('uk') || c.includes('united kingdom') || c.includes('england') || c.includes('scotland')) return { region: 'EMEA', flag: '🇬🇧' };
+  if (c.includes('ireland')) return { region: 'EMEA', flag: '🇮🇪' };
+  if (c.includes('germany')) return { region: 'EMEA', flag: '🇩🇪' };
+  if (c.includes('france')) return { region: 'EMEA', flag: '🇫🇷' };
+  if (c.includes('switzerland')) return { region: 'EMEA', flag: '🇨🇭' };
+  if (c.includes('netherlands')) return { region: 'EMEA', flag: '🇳🇱' };
+  if (c.includes('poland')) return { region: 'EMEA', flag: '🇵🇱' };
+  if (c.includes('singapore')) return { region: 'APAC', flag: '🇸🇬' };
+  if (c.includes('uae') || c.includes('emirates') || c.includes('dubai')) return { region: 'APAC', flag: '🇦🇪' };
+  if (c.includes('japan')) return { region: 'APAC', flag: '🇯🇵' };
+  if (c.includes('australia')) return { region: 'APAC', flag: '🇦🇺' };
+  if (c.includes('india')) return { region: 'APAC', flag: '🇮🇳' };
+  return { region: 'Americas', flag: '📍' };
+}
 
 export default function Dashboard() {
   useAuth(); // Auth hook retained for side effects
@@ -84,24 +67,59 @@ export default function Dashboard() {
     queryFn: () => realEstateService.getProperties(),
   });
 
+  const maProperties = useMemo(() => properties.filter((p) => p.is_ma_acquisition), [properties]);
+
+  // Dynamically compute regional city groupings from real properties
+  const regionalCities = useMemo(() => {
+    const map: Record<'Americas' | 'EMEA' | 'APAC', { city: string; country: string; flag: string; count: number; category: string }[]> = {
+      Americas: [],
+      EMEA: [],
+      APAC: [],
+    };
+
+    const cityMap: Record<string, { city: string; country: string; flag: string; count: number; category: string; region: 'Americas' | 'EMEA' | 'APAC' }> = {};
+    properties.forEach((p) => {
+      const city = p.city || 'Unknown';
+      const key = `${p.country || ''}_${city}`;
+      const { region, flag } = getRegionAndFlag(p.country);
+      if (!cityMap[key]) {
+        cityMap[key] = {
+          city,
+          country: p.country || '',
+          flag,
+          count: 0,
+          category: p.property_category || p.property_type || 'Office',
+          region,
+        };
+      }
+      cityMap[key].count += 1;
+    });
+
+    Object.values(cityMap).forEach((item) => {
+      map[item.region].push(item);
+    });
+
+    return map;
+  }, [properties]);
+
   // 1-Click Executive Excel Export for Pat & Vanessa
   const handleExportPortfolioExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
-      
+
       // Sheet 1: Executive KPI Overview
       const summarySheet = workbook.addWorksheet('Executive Summary');
       summarySheet.columns = [
         { header: 'Portfolio Metric', key: 'metric', width: 34 },
         { header: 'Current Value', key: 'value', width: 30 },
       ];
-      summarySheet.addRow({ metric: 'Total Global Real Estate Assets', value: `${summary?.total_properties || 42} Properties` });
-      summarySheet.addRow({ metric: 'Total Square Footage', value: `${Number(summary?.total_square_feet || 513400).toLocaleString()} sq ft` });
-      summarySheet.addRow({ metric: 'Total Headcount Capacity', value: `${Number(summary?.total_headcount_capacity || 3527).toLocaleString()} seats` });
-      summarySheet.addRow({ metric: 'Current Staff Occupancy', value: `${Number(summary?.total_current_occupancy || 2951).toLocaleString()} people (${summary?.global_utilization_rate || 83.7}% utilization)` });
-      summarySheet.addRow({ metric: 'Total Annual Financial Commitment', value: `$${Number(summary?.total_annual_obligations_usd || 18450000).toLocaleString()} USD` });
-      summarySheet.addRow({ metric: 'Average Cost per Sq Ft (Annual)', value: `$${summary?.average_cost_per_sqft_annual || 35.94}/sq ft` });
-      summarySheet.addRow({ metric: 'M&A Acquired Properties', value: `${summary?.ma_impact?.total_ma_properties || 5} Properties (${summary?.ma_impact?.total_acquired_sqft?.toLocaleString() || 41500} sq ft)` });
+      summarySheet.addRow({ metric: 'Total Global Real Estate Assets', value: `${summary?.total_properties ?? properties.length} Properties` });
+      summarySheet.addRow({ metric: 'Total Square Footage', value: `${Number(summary?.total_square_feet ?? 0).toLocaleString()} sq ft` });
+      summarySheet.addRow({ metric: 'Total Headcount Capacity', value: `${Number(summary?.total_headcount_capacity ?? 0).toLocaleString()} seats` });
+      summarySheet.addRow({ metric: 'Current Staff Occupancy', value: `${Number(summary?.total_current_occupancy ?? 0).toLocaleString()} people (${summary?.global_utilization_rate ?? 0}% utilization)` });
+      summarySheet.addRow({ metric: 'Total Annual Financial Commitment', value: `$${Number(summary?.total_annual_obligations_usd ?? 0).toLocaleString()} USD` });
+      summarySheet.addRow({ metric: 'Average Cost per Sq Ft (Annual)', value: `$${summary?.average_cost_per_sqft_annual ?? 0}/sq ft` });
+      summarySheet.addRow({ metric: 'M&A Acquired Properties', value: `${summary?.ma_impact?.total_ma_properties ?? maProperties.length} Properties (${Number(summary?.ma_impact?.total_acquired_sqft ?? 0).toLocaleString()} sq ft)` });
       summarySheet.addRow({ metric: 'Key Stakeholders', value: 'Pat (CEO) & Vanessa (Real Estate Admin)' });
 
       summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -168,30 +186,21 @@ export default function Dashboard() {
   const condoActionCards = [
     {
       title: 'Real Estate Portfolio Directory',
-      description: 'Explore all ~40 worldwide properties, leases, owned HQ, condos, and M&A offices with square footage, headcount, and floor plans.',
+      description: 'Explore all worldwide properties, leases, owned HQ, condos, and M&A offices with square footage, headcount, and floor plans.',
       icon: Building2,
       path: '/real-estate/portfolio',
       color: 'from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-200/50 dark:border-blue-900/40',
-      badge: `${summary?.total_properties || 42} Worldwide Assets`,
+      badge: `${summary?.total_properties ?? properties.length} Assets`,
       cta: 'Explore Portfolio',
     },
     {
       title: 'Executive Stays & Availability',
-      description: 'Reservation engine for corporate travel, executive retreats, and company condo stays across 8 major international destinations.',
+      description: 'Reservation engine for corporate travel, executive retreats, and company condo stays across major international destinations.',
       icon: Calendar,
       path: '/real-estate/bookings',
       color: 'from-emerald-500/10 to-teal-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/40',
-      badge: `${summary?.available_units || 11} Units Ready`,
+      badge: `${summary?.available_units ?? 0} Units Ready`,
       cta: 'Book a Stay',
-    },
-    {
-      title: 'Document Vault & Floor Plans',
-      description: 'Central legal repository for deeds, buyer closing statements, master leases, blueprints, and SEPA direct debit contracts.',
-      icon: FileText,
-      path: '/real-estate/documents',
-      color: 'from-purple-500/10 to-violet-500/10 text-purple-600 dark:text-purple-400 border-purple-200/50 dark:border-purple-900/40',
-      badge: 'Leases & Blueprints',
-      cta: 'View Documents',
     },
     {
       title: 'Rent, CAM & Tax Accounting',
@@ -205,7 +214,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-3 duration-500">
+    <div className="w-full space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-3 duration-500">
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white p-6 sm:p-8 md:p-10 shadow-xl border border-indigo-800/40">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
@@ -226,7 +235,7 @@ export default function Dashboard() {
           </h1>
           <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-3xl">
             Single unified system replacing scattered spreadsheets to track all leases, owned headquarters,
-            offices, executive condos, and M&A acquired properties across ~40 global locations worldwide.
+            offices, executive condos, and M&A acquired properties across global locations worldwide.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -249,7 +258,7 @@ export default function Dashboard() {
 
             <Badge variant="secondary" className="bg-white/10 text-white/90 text-xs px-3 py-1.5 border-white/10">
               <Server className="w-3.5 h-3.5 mr-1.5 text-indigo-300" />
-              {summary?.cities_count || 24} Cities Across 3 Continents
+              {summary?.cities_count ?? 0} Cities
             </Badge>
           </div>
         </div>
@@ -268,11 +277,11 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {summary?.total_properties || 42} Properties
+              {summary?.total_properties ?? properties.length} Properties
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
               <Maximize2 className="w-3.5 h-3.5 text-indigo-500" />
-              <span>{Number(summary?.total_square_feet || 513400).toLocaleString()} total sq ft</span>
+              <span>{Number(summary?.total_square_feet ?? 0).toLocaleString()} total sq ft</span>
             </p>
           </CardContent>
         </Card>
@@ -288,11 +297,11 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {Number(summary?.total_current_occupancy || 2951).toLocaleString()} Staff
+              {Number(summary?.total_current_occupancy ?? 0).toLocaleString()} Staff
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
               <Percent className="w-3.5 h-3.5 text-emerald-500" />
-              <span>{summary?.global_utilization_rate || 83.7}% of {Number(summary?.total_headcount_capacity || 3527).toLocaleString()} capacity</span>
+              <span>{summary?.global_utilization_rate ?? 0}% of {Number(summary?.total_headcount_capacity ?? 0).toLocaleString()} capacity</span>
             </p>
           </CardContent>
         </Card>
@@ -308,10 +317,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              ${(Number(summary?.total_annual_obligations_usd || 18450000) / 1000000).toFixed(1)}M / yr
+              ${((Number(summary?.total_annual_obligations_usd ?? 0)) / 1000000).toFixed(1)}M / yr
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-              <span>Avg ${summary?.average_cost_per_sqft_annual || 35.94}/sq ft/yr</span>
+              <span>Avg ${summary?.average_cost_per_sqft_annual ?? 0}/sq ft/yr</span>
             </p>
           </CardContent>
         </Card>
@@ -327,10 +336,10 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-              {summary?.ma_impact?.total_ma_properties || 5} Acquired Sites
+              {summary?.ma_impact?.total_ma_properties ?? maProperties.length} Acquired Sites
             </div>
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-              <span>{Number(summary?.ma_impact?.total_acquired_sqft || 41500).toLocaleString()} sq ft added</span>
+              <span>{Number(summary?.ma_impact?.total_acquired_sqft ?? 0).toLocaleString()} sq ft added</span>
             </p>
           </CardContent>
         </Card>
@@ -357,55 +366,38 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="p-3.5 rounded-xl border border-purple-200/60 dark:border-purple-900/40 bg-card/80 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-foreground">AeroGrid Analytics</span>
-                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]">
-                  Integrated
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Acquired March 2025. Denver Innovation Hub (9,800 sq ft) and Munich Hardware Lab (8,800 sq ft).
-              </p>
-              <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 pt-1 flex items-center justify-between">
-                <span>18,600 sq ft total</span>
-                <span>120 staff capacity</span>
-              </div>
+          {maProperties.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {maProperties.map((prop) => (
+                <div
+                  key={prop.id}
+                  className="p-3.5 rounded-xl border border-purple-200/60 dark:border-purple-900/40 bg-card/80 space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-foreground truncate max-w-[180px]">
+                      {prop.acquisition_entity_name || prop.name}
+                    </span>
+                    <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]">
+                      {prop.status}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {prop.name} • {prop.city}, {prop.country}
+                  </p>
+                  <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 pt-1 flex items-center justify-between">
+                    <span>{Number(prop.square_feet || 0).toLocaleString()} sq ft</span>
+                    <span>{prop.max_capacity || 0} staff capacity</span>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="p-3.5 rounded-xl border border-purple-200/60 dark:border-purple-900/40 bg-card/80 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-foreground">Apex Data Systems</span>
-                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px]">
-                  Transitioning
-                </Badge>
-              </div>
+          ) : (
+            <div className="p-6 text-center border border-dashed border-purple-200/50 dark:border-purple-900/40 rounded-xl bg-purple-500/5">
               <p className="text-xs text-muted-foreground">
-                Acquired January 2026. Dallas Operations Center (16,500 sq ft). Active lease renewal review.
+                No M&A acquired properties in the portfolio currently. When properties are tagged with an acquisition entity, they will appear here.
               </p>
-              <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 pt-1 flex items-center justify-between">
-                <span>16,500 sq ft total</span>
-                <span>120 staff capacity</span>
-              </div>
             </div>
-
-            <div className="p-3.5 rounded-xl border border-purple-200/60 dark:border-purple-900/40 bg-card/80 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-foreground">CloudPulse Global</span>
-                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 text-[10px]">
-                  Exit Evaluation
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Acquired Feb 2026. Raleigh Cloud Lab (9,200 sq ft) and Edinburgh Hub (7,200 sq ft expiring Nov 2026).
-              </p>
-              <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 pt-1 flex items-center justify-between">
-                <span>16,400 sq ft total</span>
-                <span>105 staff capacity</span>
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -480,51 +472,78 @@ export default function Dashboard() {
           <div>
             <h2 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
               <MapPin className="w-5 h-5 text-indigo-600" />
-              <span>Worldwide Asset Footprint (~40 Global Sites)</span>
+              <span>Worldwide Asset Footprint ({properties.length} Sites)</span>
             </h2>
             <p className="text-xs text-muted-foreground">
               Corporate offices, executive residences, and specialized R&D sites across Americas, EMEA, and APAC.
             </p>
           </div>
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border">
-            {(['Americas', 'EMEA', 'APAC'] as const).map((reg) => (
-              <button
-                key={reg}
-                onClick={() => setActiveRegion(reg)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeRegion === reg
-                    ? 'bg-card text-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {reg} ({REGION_CITIES[reg].length})
-              </button>
-            ))}
-          </div>
+          {properties.length > 0 && (
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 border border-border">
+              {(['Americas', 'EMEA', 'APAC'] as const).map((reg) => (
+                <button
+                  key={reg}
+                  onClick={() => setActiveRegion(reg)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    activeRegion === reg
+                      ? 'bg-card text-foreground shadow-xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {reg} ({regionalCities[reg].length})
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {REGION_CITIES[activeRegion].map((item) => (
-            <Link
-              key={item.city}
-              to={`/real-estate/portfolio`}
-              className="p-3.5 rounded-xl border border-border bg-card hover:border-indigo-500/50 hover:shadow-xs transition-all group"
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-2xl">{item.flag}</span>
-                <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-medium">
-                  {item.count} {item.count === 1 ? 'Site' : 'Sites'}
-                </Badge>
-              </div>
-              <div className="font-bold text-xs text-foreground group-hover:text-indigo-600 transition-colors">
-                {item.city}
-              </div>
-              <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-                {item.category}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {properties.length === 0 ? (
+          <div className="p-8 text-center border border-dashed border-border rounded-xl bg-card/40 space-y-2">
+            <Globe className="w-8 h-8 text-muted-foreground/50 mx-auto" />
+            <p className="text-sm font-semibold text-foreground">No Properties Registered Yet</p>
+            <p className="text-xs text-muted-foreground max-w-md mx-auto">
+              Extract real estate records automatically by uploading property deeds and closing statements, or import via spreadsheet.
+            </p>
+            <div className="pt-2 flex justify-center gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate('/real-estate/portfolio')}
+                className="text-xs gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                Go to Portfolio
+              </Button>
+            </div>
+          </div>
+        ) : regionalCities[activeRegion].length === 0 ? (
+          <div className="p-6 text-center border border-dashed border-border rounded-xl bg-card/40">
+            <p className="text-xs text-muted-foreground">No properties recorded in {activeRegion}.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {regionalCities[activeRegion].map((item) => (
+              <Link
+                key={item.city}
+                to={`/real-estate/portfolio?city=${encodeURIComponent(item.city)}`}
+                className="p-3.5 rounded-xl border border-border bg-card hover:border-indigo-500/50 hover:shadow-xs transition-all group"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-2xl">{item.flag}</span>
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 font-medium">
+                    {item.count} {item.count === 1 ? 'Site' : 'Sites'}
+                  </Badge>
+                </div>
+                <div className="font-bold text-xs text-foreground group-hover:text-indigo-600 transition-colors">
+                  {item.city}
+                </div>
+                <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                  {item.category}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Core Real Estate Modules Hub */}
@@ -536,7 +555,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {condoActionCards.map((item) => {
             const Icon = item.icon;
             return (

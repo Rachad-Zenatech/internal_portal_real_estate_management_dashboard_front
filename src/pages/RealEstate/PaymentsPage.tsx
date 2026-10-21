@@ -59,9 +59,16 @@ export default function PaymentsPage() {
   const [payFormData, setPayFormData] = useState({
     paid_date: new Date().toISOString().split('T')[0],
     paid_by: user?.full_name || 'Accounting Team',
+    payment_method: 'ACH_TRANSFER',
     reference_invoice: '',
     notes: '',
   });
+
+  // Generate Monthly Rent State
+  const [isGenerateRentOpen, setIsGenerateRentOpen] = useState(false);
+  const [rentGenYear, setRentGenYear] = useState(new Date().getFullYear());
+  const [rentGenMonth, setRentGenMonth] = useState(new Date().getMonth() + 1);
+  const [rentGenPropId, setRentGenPropId] = useState<string>('ALL');
 
   // Add Obligation Dialog State
   const [isAddObligationOpen, setIsAddObligationOpen] = useState(false);
@@ -100,19 +107,50 @@ export default function PaymentsPage() {
     queryFn: () => realEstateService.getSummary(),
   });
 
-  // Mark Paid Mutation
+  // Generate Rent Mutation
+  const generateRentMutation = useMutation({
+    mutationFn: () =>
+      realEstateService.generateRentObligations(
+        rentGenYear,
+        rentGenMonth,
+        rentGenPropId === 'ALL' ? undefined : rentGenPropId
+      ),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['real-estate-obligations'] });
+      queryClient.invalidateQueries({ queryKey: ['real-estate-summary'] });
+      toast.success(
+        `Generated ${res.created_count} rent obligations for ${rentGenMonth}/${rentGenYear} (${res.skipped_count} skipped/existing)`
+      );
+      setIsGenerateRentOpen(false);
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.detail || 'Failed to generate rent obligations');
+    },
+  });
+
+  // Record/Verify Payment Mutation
   const markPaidMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: typeof payFormData }) =>
-      realEstateService.markObligationPaid(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: typeof payFormData }) => {
+      if (!selectedObligation) return;
+      return realEstateService.recordPayment({
+        obligation_id: id,
+        amount_paid: Number(selectedObligation.amount),
+        currency: selectedObligation.currency,
+        payment_date: data.paid_date,
+        payment_method: data.payment_method,
+        transaction_reference: data.reference_invoice,
+        notes: data.notes,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['real-estate-obligations'] });
       queryClient.invalidateQueries({ queryKey: ['real-estate-summary'] });
-      toast.success('Payment verified and marked as PAID');
+      toast.success('Payment verified and recorded in accounting audit log');
       setIsPayModalOpen(false);
       setSelectedObligation(null);
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || 'Failed to update payment');
+      toast.error(err?.response?.data?.detail || 'Failed to record payment');
     },
   });
 
@@ -210,20 +248,42 @@ export default function PaymentsPage() {
         </div>
 
         {canVerifyPayments && (
-          <Button
-            onClick={() => {
-              if (units.length > 0 && !newObligation.unit_id) {
-                setNewObligation((prev) => ({ ...prev, unit_id: units[0].id }));
-              }
-              setIsAddObligationOpen(true);
-            }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Obligation</span>
-          </Button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Button
+              onClick={() => setIsGenerateRentOpen(true)}
+              variant="outline"
+              className="border-white/20 bg-white/10 hover:bg-white/20 text-white gap-2 font-semibold text-xs cursor-pointer"
+            >
+              <Calendar className="w-3.5 h-3.5 text-indigo-300" />
+              <span>Generate Monthly Rent</span>
+            </Button>
+
+            <Button
+              onClick={() => {
+                if (units.length > 0 && !newObligation.unit_id) {
+                  setNewObligation((prev) => ({ ...prev, unit_id: units[0].id }));
+                }
+                setIsAddObligationOpen(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Obligation</span>
+            </Button>
+          </div>
         )}
       </div>
+
+      {/* BANKING BOUNDARY DISCLAIMER BANNER */}
+      <div className="p-3.5 rounded-xl bg-muted/40 border border-border text-foreground flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <ShieldAlert className="w-4 h-4 text-indigo-500 shrink-0" />
+          <span>
+            <strong>Accounting Audit Ledger:</strong> Recording payments in this workspace documents verified settlements with transaction references and does <em>not</em> execute automated bank transfers.
+          </span>
+        </div>
+      </div>
+
 
       {/* OVERDUE NOTIFICATIONS ALERT BANNER */}
       {overdueList.length > 0 && (
@@ -459,6 +519,7 @@ export default function PaymentsPage() {
                             setPayFormData({
                               paid_date: new Date().toISOString().split('T')[0],
                               paid_by: o.paid_by || user?.full_name || 'Accounting Team',
+                              payment_method: 'ACH_TRANSFER',
                               reference_invoice: o.reference_invoice || '',
                               notes: '',
                             });
@@ -720,6 +781,108 @@ export default function PaymentsPage() {
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               {createObligationMutation.isPending ? 'Scheduling...' : 'Schedule Obligation'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Monthly Rent Dialog */}
+      <Dialog open={isGenerateRentOpen} onOpenChange={setIsGenerateRentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate Monthly Rent Obligations</DialogTitle>
+            <DialogDescription className="text-xs">
+              Batch create monthly rent payment obligations across active, confirmed leases with atomic duplicate protection and end-of-month due day clamping.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3.5 py-2 text-xs">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="font-semibold text-foreground block mb-1">Target Year</label>
+                <Input
+                  type="number"
+                  min="2020"
+                  max="2035"
+                  value={rentGenYear}
+                  onChange={(e) => setRentGenYear(parseInt(e.target.value, 10) || 2026)}
+                  className="h-8 text-xs font-mono"
+                />
+              </div>
+              <div>
+                <label className="font-semibold text-foreground block mb-1">Target Month</label>
+                <Select
+                  value={String(rentGenMonth)}
+                  onValueChange={(val) => setRentGenMonth(parseInt(val, 10))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      { val: '1', label: 'January' },
+                      { val: '2', label: 'February' },
+                      { val: '3', label: 'March' },
+                      { val: '4', label: 'April' },
+                      { val: '5', label: 'May' },
+                      { val: '6', label: 'June' },
+                      { val: '7', label: 'July' },
+                      { val: '8', label: 'August' },
+                      { val: '9', label: 'September' },
+                      { val: '10', label: 'October' },
+                      { val: '11', label: 'November' },
+                      { val: '12', label: 'December' },
+                    ].map((m) => (
+                      <SelectItem key={m.val} value={m.val}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <label className="font-semibold text-foreground block mb-1">Target Property</label>
+              <Select value={rentGenPropId} onValueChange={setRentGenPropId}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="All Properties" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Active Leased Properties</SelectItem>
+                  {Array.from(new Set(units.map((u) => u.property_id).filter(Boolean))).map((pid) => {
+                    const u = units.find((x) => x.property_id === pid);
+                    return (
+                      <SelectItem key={String(pid)} value={String(pid)}>
+                        {u?.city} — {u?.property_name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="p-3 bg-muted/40 rounded-lg border border-border text-[11px] text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground">Accounting Engine Rules:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>Respects lease effective start and end dates.</li>
+                <li>Clamps due dates exceeding month length (e.g. day 31 becomes Feb 28).</li>
+                <li>Prevents duplicate obligations for the same lease and period.</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setIsGenerateRentOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={generateRentMutation.isPending}
+              onClick={() => generateRentMutation.mutate()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {generateRentMutation.isPending ? 'Generating...' : 'Generate Rent Obligations'}
             </Button>
           </DialogFooter>
         </DialogContent>

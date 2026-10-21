@@ -246,15 +246,20 @@ export const apiClient = {
   
   async post<T>(endpoint: string, body?: unknown, options?: ApiRequestOptions): Promise<T> {
     const isFormData = body instanceof FormData;
+    const reqHeaders: Record<string, string> = {
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...getAuthHeaders(),
+      ...((options?.headers as Record<string, string>) || {}),
+    };
+    if (isFormData) {
+      delete reqHeaders["Content-Type"];
+      delete reqHeaders["content-type"];
+    }
     const res = await monitoredFetch(endpoint, {
       ...options,
       method: "POST",
       credentials: "include",
-      headers: {
-        ...(isFormData ? {} : { "Content-Type": "application/json" }),
-        ...getAuthHeaders(),
-        ...(options?.headers as Record<string, string>),
-      } as HeadersInit,
+      headers: reqHeaders as HeadersInit,
       body: isFormData ? body : JSON.stringify(body),
     });
     return handleResponse<T>(res);

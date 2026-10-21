@@ -1,32 +1,28 @@
 import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { realEstateService } from '@/services/realEstateService';
-import type { Property } from '@/types/realEstate';
+import type { RealEstateSummary, Property, PropertyExtractionJob } from '@/types/realEstate';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Building2,
   MapPin,
-  Maximize2,
-  Plus,
+  AlertTriangle,
+  CheckCircle2,
+  ArrowRight,
+  Layers,
+  Map as MapIcon,
+  LayoutGrid,
+  Table as TableIcon,
   Search,
-  FileSpreadsheet,
-  Users,
-  Sparkles,
-  ExternalLink,
   ChevronRight,
+  Eye,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -34,718 +30,546 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
-import SpreadsheetImportModal from './SpreadsheetImportModal';
-
-const CATEGORY_TABS = [
-  { id: 'ALL', label: 'All Real Estate (~40)' },
-  { id: 'LEASED_OFFICE', label: 'Leased Offices' },
-  { id: 'OWNED_HQ', label: 'Owned Headquarters' },
-  { id: 'COMPANY_CONDO', label: 'Executive Condos' },
-  { id: 'MA_ONLY', label: 'M&A Acquisitions' },
-  { id: 'RD_FACILITY', label: 'R&D & Labs' },
-];
+import DocumentReviewModal from './DocumentReviewModal';
+import AddPropertyDocumentModal from './AddPropertyDocumentModal';
+import PortfolioMapView from './PortfolioMapView';
 
 export default function PortfolioPage() {
+  const navigate = useNavigate();
   const { hasRole, hasPermission } = useAuth();
   const isSuperAdmin = hasRole('SUPER_ADMIN');
-  const canManage = isSuperAdmin || hasPermission('REAL_ESTATE_MANAGE') || hasPermission('REAL_ESTATE_PORTFOLIO_CREATE');
-  const queryClient = useQueryClient();
+  const canManage = isSuperAdmin || hasRole('PROPERTY_MANAGER') || hasPermission('REAL_ESTATE_PROPERTIES_CREATE');
 
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [selectedCity, setSelectedCity] = useState<string>('ALL');
+  // View Mode: 'cards' | 'table' | 'map'
+  const [viewMode, setViewMode] = useState<'cards' | 'table' | 'map'>('cards');
+
+  // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState<'SPACE' | 'COSTS' | 'LEASE' | 'MA'>('SPACE');
+  const [selectedOwner, setSelectedOwner] = useState('ALL');
+  const [selectedCountry, setSelectedCountry] = useState('ALL');
+  const [selectedCity, setSelectedCity] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
 
-  // Add Property State
-  const [newProp, setNewProp] = useState<Partial<Property>>({
-    name: '',
-    city: 'Chicago',
-    country: 'USA',
-    address: '',
-    property_category: 'LEASED_OFFICE',
-    square_feet: 12000,
-    max_capacity: 85,
-    current_occupancy: 70,
-    monthly_rent: 32000,
-    monthly_cam: 4800,
-    annual_property_tax: 22000,
-    lease_type: 'Triple Net (NNN)',
-    lease_expiration_date: '2028-12-31',
-    renewal_notice_deadline: '2028-06-30',
-    landlord_name: '',
-    is_ma_acquisition: false,
-    acquisition_entity_name: '',
-    primary_contact: 'Vanessa',
+  // Modals state
+  const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedReviewJob, setSelectedReviewJob] = useState<PropertyExtractionJob | null>(null);
+
+  // Load KPI Summary
+  const { data: summary, isLoading: isSummaryLoading } = useQuery<RealEstateSummary>({
+    queryKey: ['real-estate-portfolio-summary'],
+    queryFn: () => realEstateService.getSummary(),
   });
 
-  const { data: properties = [], isLoading } = useQuery({
-    queryKey: ['real-estate-properties', selectedCity, selectedCategory, searchQuery],
+  // Load All Properties for Table, Cards & Map views
+  const { data: properties = [] } = useQuery<Property[]>({
+    queryKey: ['real-estate-properties', selectedCity, selectedType, searchQuery],
     queryFn: () =>
       realEstateService.getProperties({
         city: selectedCity !== 'ALL' ? selectedCity : undefined,
-        category: selectedCategory !== 'ALL' && selectedCategory !== 'MA_ONLY' ? selectedCategory : undefined,
-        is_ma: selectedCategory === 'MA_ONLY' ? true : undefined,
+        category: selectedType !== 'ALL' ? selectedType : undefined,
         search: searchQuery || undefined,
       }),
   });
 
-  // Summary data not required in this component; removed to avoid unused variable.
-
-  const createPropertyMutation = useMutation({
-    mutationFn: (data: Partial<Property>) => realEstateService.createProperty(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['real-estate-properties'] });
-      queryClient.invalidateQueries({ queryKey: ['real-estate-summary'] });
-      toast.success('Property successfully registered in corporate portfolio');
-      setIsAddPropertyOpen(false);
-    },
-    onError: (err: any) => {
-      toast.error(`Failed to register property: ${err.message || 'Check inputs'}`);
-    },
+  // Load Pending Document Extraction Jobs
+  const { data: extractionJobs = [] } = useQuery<PropertyExtractionJob[]>({
+    queryKey: ['property-extraction-jobs', 'NEEDS_REVIEW'],
+    queryFn: () => realEstateService.getPropertyExtractionJobs('NEEDS_REVIEW'),
   });
+
+  // Unique Filter Options
+  const uniqueOwners = useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach((p) => {
+      const owner = p.legal_owner || p.owning_company || p.responsible_legal_entity;
+      if (owner) set.add(owner);
+    });
+    return Array.from(set);
+  }, [properties]);
+
+  const uniqueCountries = useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach((p) => {
+      if (p.country) set.add(p.country);
+    });
+    return Array.from(set);
+  }, [properties]);
 
   const uniqueCities = useMemo(() => {
     const set = new Set<string>();
     properties.forEach((p) => {
       if (p.city) set.add(p.city);
     });
-    return Array.from(set).sort();
+    return Array.from(set);
   }, [properties]);
 
-  const handleOpenDetails = (prop: Property) => {
-    setSelectedProperty(prop);
-    setActiveDetailTab('SPACE');
-    setIsDetailOpen(true);
+  // Filtered Properties for Views
+  const filteredProperties = useMemo(() => {
+    return properties.filter((p) => {
+      if (selectedOwner !== 'ALL') {
+        const owner = p.legal_owner || p.owning_company || p.responsible_legal_entity;
+        if (owner !== selectedOwner) return false;
+      }
+      if (selectedCountry !== 'ALL' && p.country !== selectedCountry) return false;
+      if (selectedCity !== 'ALL' && p.city !== selectedCity) return false;
+      if (selectedType !== 'ALL' && p.property_category !== selectedType && p.property_type !== selectedType)
+        return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const match =
+          p.name.toLowerCase().includes(q) ||
+          p.address.toLowerCase().includes(q) ||
+          p.city.toLowerCase().includes(q) ||
+          (p.legal_owner && p.legal_owner.toLowerCase().includes(q));
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [properties, selectedOwner, selectedCountry, selectedCity, selectedType, searchQuery]);
+
+  const handleOpenPropertyDetail = (prop: Property) => {
+    navigate(`/real-estate/properties?property_id=${prop.id}`);
+  };
+
+  const handleOpenReview = (job: PropertyExtractionJob) => {
+    setSelectedReviewJob(job);
+    setIsReviewModalOpen(true);
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6 pb-12 animate-in fade-in duration-300">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/80">
+    <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Corporate Real Estate Portfolio
+            <span className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Building2 className="w-6 h-6" />
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+              Real Estate Portfolio
             </h1>
-            <Badge variant="outline" className="text-xs font-semibold bg-primary/5 text-primary border-primary/20">
-              {properties.length} Properties Tracked
-            </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Central source of truth for all leases, owned properties, executive residences, and M&A offices worldwide.
+          <p className="text-sm text-muted-foreground mt-1">
+            Portfolio intelligence, property ownership records, building specifications, and inspection history.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setIsImportModalOpen(true)}
-            variant="outline"
-            size="sm"
-            className="text-xs h-8.5 gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Vanessa's Spreadsheet Ingestion</span>
-          </Button>
-
+        <div className="flex items-center gap-2.5 flex-wrap">
           {canManage && (
-            <Button
-              onClick={() => setIsAddPropertyOpen(true)}
-              size="sm"
-              className="text-xs h-8.5 gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Property</span>
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="gap-2 text-xs font-semibold cursor-pointer"
+                onClick={() => navigate('/real-estate/properties')}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                Manage Properties
+              </Button>
+              <Button
+                className="gap-2 text-xs font-semibold bg-linear-to-r from-primary to-indigo-600 hover:from-primary/90 hover:to-indigo-600/90 text-primary-foreground shadow-sm cursor-pointer"
+                onClick={() => setIsAddDocModalOpen(true)}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                Add Property via Documents
+              </Button>
+            </>
           )}
         </div>
       </div>
 
-      {/* Category Tabs Strip */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {CATEGORY_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSelectedCategory(tab.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              selectedCategory === tab.id
-                ? 'bg-primary text-primary-foreground shadow-2xs'
-                : 'bg-card text-muted-foreground hover:text-foreground border border-border'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Filter and Search Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-xl bg-card border border-border shadow-2xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by building, city, M&A deal, landlord..."
-            className="pl-9 h-8.5 text-xs bg-background"
-          />
-        </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Select value={selectedCity} onValueChange={setSelectedCity}>
-            <SelectTrigger className="h-8.5 text-xs w-full sm:w-44 bg-background">
-              <SelectValue placeholder="Filter by City" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Global Cities</SelectItem>
-              {uniqueCities.map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="text-xs text-muted-foreground shrink-0 hidden md:block">
-            Showing <span className="font-semibold text-foreground">{properties.length}</span> sites
+      {/* Pending Document Reviews Alert Banner */}
+      {extractionJobs.length > 0 && (
+        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+            </span>
+            <div>
+              <span className="font-bold text-foreground">
+                {extractionJobs.length} Document(s) Awaiting Evidence Review:
+              </span>
+              <p className="text-muted-foreground text-[11px] mt-0.5">
+                New property deeds and inspection reports have been processed by the hybrid extraction pipeline and require user confirmation.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1 border-amber-500/40 text-amber-800 dark:text-amber-200"
+              onClick={() => handleOpenReview(extractionJobs[0])}
+            >
+              <Eye className="w-3 h-3" />
+              Review Latest Extraction ({extractionJobs[0].document_title || extractionJobs[0].document_filename})
+            </Button>
           </div>
         </div>
+      )}
+
+      {/* Top Inventory & Operational KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {/* Active Properties */}
+        <Card className="p-4 bg-card border-border shadow-xs hover:border-primary/40 transition-colors">
+          <div className="flex items-center justify-between text-muted-foreground mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider">Properties Owned / Managed</span>
+            <Building2 className="w-4 h-4 text-primary" />
+          </div>
+          <div className="text-2xl font-bold text-foreground">
+            {isSummaryLoading ? '...' : summary?.active_properties ?? properties.length}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Confirmed portfolio assets</p>
+        </Card>
+
+        {/* Total Square Footage */}
+        <Card className="p-4 bg-card border-border shadow-xs hover:border-primary/40 transition-colors">
+          <div className="flex items-center justify-between text-muted-foreground mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider">Total Building Area</span>
+            <Layers className="w-4 h-4 text-indigo-500" />
+          </div>
+          <div className="text-2xl font-bold text-foreground">
+            {isSummaryLoading
+              ? '...'
+              : properties
+                  .reduce((acc, p) => acc + (p.building_area || p.square_feet || 0), 0)
+                  .toLocaleString()}{' '}
+            <span className="text-xs font-normal text-muted-foreground">sqft</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Normalized gross structural area</p>
+        </Card>
+
+        {/* Total Units */}
+        <Card className="p-4 bg-card border-border shadow-xs hover:border-emerald-500/40 transition-colors">
+          <div className="flex items-center justify-between text-muted-foreground mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider">Active Units</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          </div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            {isSummaryLoading ? '...' : summary?.active_units ?? 0}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Bookable & office premises</p>
+        </Card>
+
+        {/* Global Locations */}
+        <Card className="p-4 bg-card border-border shadow-xs hover:border-blue-500/40 transition-colors">
+          <div className="flex items-center justify-between text-muted-foreground mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider">Global Locations</span>
+            <MapPin className="w-4 h-4 text-blue-500" />
+          </div>
+          <div className="text-2xl font-bold text-foreground">
+            {isSummaryLoading ? '...' : summary?.total_locations ?? uniqueCities.length}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Cities across North America & Europe</p>
+        </Card>
       </div>
 
-      {/* Properties Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="h-56 animate-pulse bg-muted/40" />
-          ))}
-        </div>
-      ) : properties.length === 0 ? (
-        <div className="text-center p-12 bg-card rounded-2xl border border-dashed border-border text-muted-foreground">
-          <Building2 className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <h3 className="font-semibold text-sm text-foreground">No Properties Found</h3>
-          <p className="text-xs mt-1">Try adjusting your filters or search keywords.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {properties.map((prop) => {
-            const isMA = prop.is_ma_acquisition;
-            const occRate = prop.max_capacity && prop.max_capacity > 0
-              ? Math.round(((prop.current_occupancy || 0) / prop.max_capacity) * 100)
-              : 0;
-
-            return (
-              <Card
-                key={prop.id}
-                onClick={() => handleOpenDetails(prop)}
-                className={`overflow-hidden border border-border/80 hover:border-primary/50 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer flex flex-col justify-between group ${
-                  isMA ? 'bg-gradient-to-b from-purple-500/5 to-card' : 'bg-card'
-                }`}
-              >
-                <div className="p-4 sm:p-5 space-y-3">
-                  {/* Top Tags */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          prop.property_category === 'OWNED_HQ'
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 text-[10px]'
-                            : prop.property_category === 'COMPANY_CONDO'
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-[10px]'
-                            : 'bg-muted text-foreground text-[10px]'
-                        }
-                      >
-                        {prop.property_category === 'OWNED_HQ'
-                          ? 'Owned HQ'
-                          : prop.property_category === 'COMPANY_CONDO'
-                          ? 'Executive Condo'
-                          : prop.property_category === 'RD_FACILITY'
-                          ? 'R&D / Lab'
-                          : 'Leased Office'}
-                      </Badge>
-
-                      {isMA && (
-                        <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border-purple-200 text-[10px] gap-1">
-                          <Sparkles className="w-2.5 h-2.5" />
-                          <span>M&A: {prop.acquisition_entity_name || 'Acquired'}</span>
-                        </Badge>
-                      )}
-                    </div>
-
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase">
-                      {prop.country}
-                    </span>
-                  </div>
-
-                  {/* Property Name & Location */}
-                  <div>
-                    <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                      {prop.name}
-                    </h3>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1 truncate">
-                      <MapPin className="w-3.5 h-3.5 shrink-0 text-primary" />
-                      <span className="truncate">{prop.address}, {prop.city}</span>
-                    </div>
-                  </div>
-
-                  {/* Core Metrics: Sq Ft & Occupancy Bar */}
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/60">
-                    <div className="p-2 rounded-lg bg-muted/40">
-                      <span className="text-[10px] text-muted-foreground block">Square Footage</span>
-                      <span className="font-bold text-xs text-foreground flex items-center gap-1">
-                        <Maximize2 className="w-3 h-3 text-indigo-500" />
-                        {Number(prop.square_feet || 0).toLocaleString()} sq ft
-                      </span>
-                    </div>
-
-                    <div className="p-2 rounded-lg bg-muted/40">
-                      <span className="text-[10px] text-muted-foreground block">Headcount & Occ.</span>
-                      <span className="font-bold text-xs text-foreground flex items-center gap-1">
-                        <Users className="w-3 h-3 text-emerald-500" />
-                        {prop.current_occupancy || 0} / {prop.max_capacity || 0} ({occRate}%)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Costs and Lease Expiration */}
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <div>
-                      <span className="text-[10px] text-muted-foreground block">Monthly Commitment</span>
-                      <span className="font-bold text-foreground">
-                        ${(Number(prop.monthly_rent || 0) + Number(prop.monthly_cam || 0)).toLocaleString()}/mo
-                      </span>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-[10px] text-muted-foreground block">Lease Expiration</span>
-                      <span className="font-medium text-foreground">
-                        {prop.lease_expiration_date || 'Owned / Direct'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer Bar */}
-                <div className="px-4 py-2.5 bg-muted/30 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>Contact: {prop.primary_contact || 'Vanessa'}</span>
-                  <span className="font-semibold text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
-                    Specs & Terms <ChevronRight className="w-3 h-3" />
-                  </span>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Property Details Drawer / Modal */}
-      {selectedProperty && (
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-6 overflow-hidden">
-            <DialogHeader className="pb-3 border-b">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <DialogTitle className="text-lg font-bold">
-                      {selectedProperty.name}
-                    </DialogTitle>
-                    {selectedProperty.is_ma_acquisition && (
-                      <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 text-[10px]">
-                        M&A Asset
-                      </Badge>
-                    )}
-                  </div>
-                  <DialogDescription className="text-xs mt-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-primary" />
-                    <span>{selectedProperty.address}, {selectedProperty.city}, {selectedProperty.country}</span>
-                  </DialogDescription>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {selectedProperty.property_category || 'OFFICE'}
-                </Badge>
-              </div>
-
-              {/* Tab Navigation inside Modal */}
-              <div className="flex items-center gap-2 pt-3 border-t mt-3">
-                {[
-                  { id: 'SPACE', label: 'Space & Occupancy' },
-                  { id: 'COSTS', label: 'Financials & Costs' },
-                  { id: 'LEASE', label: 'Lease Terms & Dates' },
-                  { id: 'MA', label: 'M&A & Notes' },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveDetailTab(t.id as any)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      activeDetailTab === t.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </DialogHeader>
-
-            <div className="flex-1 overflow-y-auto py-4 space-y-4">
-              {activeDetailTab === 'SPACE' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div className="p-3 rounded-xl border bg-muted/20">
-                      <span className="text-[10px] text-muted-foreground block">Square Footage</span>
-                      <span className="text-base font-bold text-foreground">
-                        {Number(selectedProperty.square_feet || 0).toLocaleString()} sq ft
-                      </span>
-                    </div>
-                    <div className="p-3 rounded-xl border bg-muted/20">
-                      <span className="text-[10px] text-muted-foreground block">Headcount Capacity</span>
-                      <span className="text-base font-bold text-foreground">
-                        {selectedProperty.max_capacity || 0} seats
-                      </span>
-                    </div>
-                    <div className="p-3 rounded-xl border bg-muted/20">
-                      <span className="text-[10px] text-muted-foreground block">Current Staff</span>
-                      <span className="text-base font-bold text-emerald-600">
-                        {selectedProperty.current_occupancy || 0} people
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl border border-border bg-card space-y-2">
-                    <h4 className="font-bold text-xs text-foreground flex items-center justify-between">
-                      <span>Floor Plans & Architectural Blueprints</span>
-                      {selectedProperty.floor_plan_url && (
-                        <a
-                          href={selectedProperty.floor_plan_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-primary hover:underline flex items-center gap-1"
-                        >
-                          Open Blueprint <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
-                    </h4>
-                    <p className="text-xs text-muted-foreground">
-                      Floor plan blueprint reference: {selectedProperty.floor_plan_url || 'Schematic blueprint archived in Document Vault'}.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {activeDetailTab === 'COSTS' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl border bg-card">
-                      <span className="text-xs text-muted-foreground block">Monthly Base Rent</span>
-                      <span className="text-lg font-bold text-foreground">
-                        ${Number(selectedProperty.monthly_rent || 0).toLocaleString()} / mo
-                      </span>
-                    </div>
-                    <div className="p-3.5 rounded-xl border bg-card">
-                      <span className="text-xs text-muted-foreground block">Monthly CAM / Maintenance</span>
-                      <span className="text-lg font-bold text-foreground">
-                        ${Number(selectedProperty.monthly_cam || 0).toLocaleString()} / mo
-                      </span>
-                    </div>
-                    <div className="p-3.5 rounded-xl border bg-card">
-                      <span className="text-xs text-muted-foreground block">Annual Municipal Taxes</span>
-                      <span className="text-lg font-bold text-foreground">
-                        ${Number(selectedProperty.annual_property_tax || 0).toLocaleString()} / yr
-                      </span>
-                    </div>
-                    <div className="p-3.5 rounded-xl border bg-card">
-                      <span className="text-xs text-muted-foreground block">Total Monthly Cost</span>
-                      <span className="text-lg font-bold text-emerald-600">
-                        ${(Number(selectedProperty.monthly_rent || 0) + Number(selectedProperty.monthly_cam || 0)).toLocaleString()} / mo
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeDetailTab === 'LEASE' && (
-                <div className="space-y-3 text-xs">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl border bg-muted/20">
-                      <span className="text-muted-foreground block">Lease Structure</span>
-                      <span className="font-bold text-foreground">{selectedProperty.lease_type || 'Triple Net (NNN)'}</span>
-                    </div>
-                    <div className="p-3 rounded-xl border bg-muted/20">
-                      <span className="text-muted-foreground block">Landlord / Owner</span>
-                      <span className="font-bold text-foreground">{selectedProperty.landlord_name || 'Direct / Owned'}</span>
-                    </div>
-                    <div className="p-3 rounded-xl border bg-muted/20">
-                      <span className="text-muted-foreground block">Lease Commencement</span>
-                      <span className="font-bold text-foreground">{selectedProperty.lease_commencement_date || 'N/A'}</span>
-                    </div>
-                    <div className="p-3 rounded-xl border bg-muted/20">
-                      <span className="text-muted-foreground block">Lease Expiration Date</span>
-                      <span className="font-bold text-rose-600 dark:text-rose-400">{selectedProperty.lease_expiration_date || 'Owned'}</span>
-                    </div>
-                    <div className="p-3 rounded-xl border bg-muted/20 col-span-2">
-                      <span className="text-muted-foreground block">Contractual Renewal Notice Deadline</span>
-                      <span className="font-bold text-amber-600">{selectedProperty.renewal_notice_deadline || 'No renewal notice requirement'}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeDetailTab === 'MA' && (
-                <div className="space-y-3 text-xs">
-                  <div className="p-3.5 rounded-xl border border-purple-200/60 dark:border-purple-900/40 bg-purple-50/20 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-foreground">Acquisition Classification</span>
-                      <Badge variant="outline" className="text-[10px]">
-                        {selectedProperty.is_ma_acquisition ? 'M&A Deal Asset' : 'Organic Corporate Portfolio'}
-                      </Badge>
-                    </div>
-                    {selectedProperty.is_ma_acquisition && (
-                      <div>
-                        <span className="text-muted-foreground">Acquired Entity: </span>
-                        <span className="font-bold text-purple-700 dark:text-purple-300">
-                          {selectedProperty.acquisition_entity_name}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-3 rounded-xl border bg-muted/20 space-y-1">
-                    <span className="text-muted-foreground block font-semibold">Vanessa's Spreadsheet Reference</span>
-                    <p className="text-foreground">{selectedProperty.source_spreadsheet_ref || 'Primary Real Estate Register'}</p>
-                  </div>
-
-                  {selectedProperty.notes && (
-                    <div className="p-3 rounded-xl border bg-muted/20 space-y-1">
-                      <span className="text-muted-foreground block font-semibold">Notes & Context</span>
-                      <p className="text-foreground">{selectedProperty.notes}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <DialogFooter className="pt-3 border-t">
-              <Button onClick={() => setIsDetailOpen(false)} className="h-8 text-xs">
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Add Property Modal */}
-      <Dialog open={isAddPropertyOpen} onOpenChange={setIsAddPropertyOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-6 gap-5">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Register Real Estate Property</DialogTitle>
-            <DialogDescription className="text-sm">
-              Add a new lease, office, condo, or acquired site to the global corporate portfolio.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-5 py-2 text-sm">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="font-semibold block mb-1.5">Property Name</label>
-                <Input
-                  value={newProp.name || ''}
-                  onChange={(e) => setNewProp({ ...newProp, name: e.target.value })}
-                  placeholder="e.g. Austin Tech Center"
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Category</label>
-                <Select
-                  value={newProp.property_category || 'LEASED_OFFICE'}
-                  onValueChange={(val) => setNewProp({ ...newProp, property_category: val })}
-                >
-                  <SelectTrigger className="h-10 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LEASED_OFFICE">Leased Office</SelectItem>
-                    <SelectItem value="OWNED_HQ">Owned HQ</SelectItem>
-                    <SelectItem value="COMPANY_CONDO">Executive Condo</SelectItem>
-                    <SelectItem value="RD_FACILITY">R&D Lab</SelectItem>
-                    <SelectItem value="WAREHOUSE">Warehouse</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="font-semibold block mb-1.5">City</label>
-                <Input
-                  value={newProp.city || ''}
-                  onChange={(e) => setNewProp({ ...newProp, city: e.target.value })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Country</label>
-                <Input
-                  value={newProp.country || ''}
-                  onChange={(e) => setNewProp({ ...newProp, country: e.target.value })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Postal Code</label>
-                <Input
-                  value={newProp.postal_code || ''}
-                  onChange={(e) => setNewProp({ ...newProp, postal_code: e.target.value })}
-                  className="h-10 text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="font-semibold block mb-1.5">Full Street Address</label>
+      {/* Main Portfolio Exploration Section */}
+      <div className="space-y-4">
+        {/* Filter Bar & View Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-card border border-border rounded-xl">
+          {/* Left: Filters */}
+          <div className="flex items-center gap-2 flex-wrap flex-1 text-xs">
+            <div className="relative w-56">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
               <Input
-                value={newProp.address || ''}
-                onChange={(e) => setNewProp({ ...newProp, address: e.target.value })}
-                placeholder="100 Congress Ave, Suite 1400"
-                className="h-10 text-sm"
+                placeholder="Search name, address, owner..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 text-xs"
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="font-semibold block mb-1.5">Square Feet</label>
-                <Input
-                  type="number"
-                  value={newProp.square_feet || 0}
-                  onChange={(e) => setNewProp({ ...newProp, square_feet: Number(e.target.value) })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Headcount Cap.</label>
-                <Input
-                  type="number"
-                  value={newProp.max_capacity || 0}
-                  onChange={(e) => setNewProp({ ...newProp, max_capacity: Number(e.target.value) })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Current Staff</label>
-                <Input
-                  type="number"
-                  value={newProp.current_occupancy || 0}
-                  onChange={(e) => setNewProp({ ...newProp, current_occupancy: Number(e.target.value) })}
-                  className="h-10 text-sm"
-                />
-              </div>
-            </div>
+            {/* Owner Filter */}
+            <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+              <SelectTrigger className="h-8 text-xs w-40">
+                <SelectValue placeholder="Owner / Company" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Owners</SelectItem>
+                {uniqueOwners.map((owner) => (
+                  <SelectItem key={owner} value={owner}>
+                    {owner}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="font-semibold block mb-1.5">Monthly Rent ($)</label>
-                <Input
-                  type="number"
-                  value={newProp.monthly_rent || 0}
-                  onChange={(e) => setNewProp({ ...newProp, monthly_rent: Number(e.target.value) })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Monthly CAM ($)</label>
-                <Input
-                  type="number"
-                  value={newProp.monthly_cam || 0}
-                  onChange={(e) => setNewProp({ ...newProp, monthly_cam: Number(e.target.value) })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Annual Taxes ($)</label>
-                <Input
-                  type="number"
-                  value={newProp.annual_property_tax || 0}
-                  onChange={(e) => setNewProp({ ...newProp, annual_property_tax: Number(e.target.value) })}
-                  className="h-10 text-sm"
-                />
-              </div>
-            </div>
+            {/* Country Filter */}
+            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+              <SelectTrigger className="h-8 text-xs w-32">
+                <SelectValue placeholder="Country" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Countries</SelectItem>
+                {uniqueCountries.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="font-semibold block mb-1.5">Lease Expiration</label>
-                <Input
-                  type="date"
-                  value={newProp.lease_expiration_date || ''}
-                  onChange={(e) => setNewProp({ ...newProp, lease_expiration_date: e.target.value })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">Renewal Notice Deadline</label>
-                <Input
-                  type="date"
-                  value={newProp.renewal_notice_deadline || ''}
-                  onChange={(e) => setNewProp({ ...newProp, renewal_notice_deadline: e.target.value })}
-                  className="h-10 text-sm"
-                />
-              </div>
-            </div>
+            {/* City Filter */}
+            <Select value={selectedCity} onValueChange={setSelectedCity}>
+              <SelectTrigger className="h-8 text-xs w-32">
+                <SelectValue placeholder="City" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Cities</SelectItem>
+                {uniqueCities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="font-semibold block mb-1.5">Landlord / Owner</label>
-                <Input
-                  value={newProp.landlord_name || ''}
-                  onChange={(e) => setNewProp({ ...newProp, landlord_name: e.target.value })}
-                  className="h-10 text-sm"
-                />
-              </div>
-              <div>
-                <label className="font-semibold block mb-1.5">M&A Acquisition Entity (if any)</label>
-                <Input
-                  value={newProp.acquisition_entity_name || ''}
-                  onChange={(e) =>
-                    setNewProp({
-                      ...newProp,
-                      acquisition_entity_name: e.target.value,
-                      is_ma_acquisition: Boolean(e.target.value.trim()),
-                    })
-                  }
-                  placeholder="e.g. AeroGrid Analytics"
-                  className="h-10 text-sm"
-                />
-              </div>
-            </div>
+            {/* Property Type Filter */}
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="h-8 text-xs w-36">
+                <SelectValue placeholder="Property Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Property Types</SelectItem>
+                <SelectItem value="Office">Office</SelectItem>
+                <SelectItem value="Corporate HQ">Corporate HQ</SelectItem>
+                <SelectItem value="Executive Condo">Executive Condo</SelectItem>
+                <SelectItem value="Apartment Building">Apartment Building</SelectItem>
+                <SelectItem value="R&D / Lab">R&D / Lab</SelectItem>
+                <SelectItem value="Warehouse">Warehouse</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <DialogFooter className="pt-2">
-            <Button variant="outline" onClick={() => setIsAddPropertyOpen(false)} className="h-10 text-sm">
-              Cancel
+          {/* Right: View Toggles (Cards, Table, Map) */}
+          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border shrink-0">
+            <Button
+              size="sm"
+              variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
+              className="h-7 text-xs gap-1 px-2.5"
+              onClick={() => setViewMode('cards')}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Cards</span>
             </Button>
             <Button
-              onClick={() => createPropertyMutation.mutate(newProp)}
-              disabled={createPropertyMutation.isPending || !newProp.name}
-              className="h-10 text-sm bg-primary"
+              size="sm"
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              className="h-7 text-xs gap-1 px-2.5"
+              onClick={() => setViewMode('table')}
             >
-              Save to Portfolio
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>Table</span>
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <Button
+              size="sm"
+              variant={viewMode === 'map' ? 'secondary' : 'ghost'}
+              className="h-7 text-xs gap-1 px-2.5"
+              onClick={() => setViewMode('map')}
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>Map</span>
+            </Button>
+          </div>
+        </div>
 
-      {/* Spreadsheet Import Modal */}
-      <SpreadsheetImportModal
-        isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['real-estate-properties'] });
-          queryClient.invalidateQueries({ queryKey: ['real-estate-summary'] });
+        {/* VIEW 1: MAP VIEW */}
+        {viewMode === 'map' && (
+          <PortfolioMapView
+            properties={filteredProperties}
+            onSelectProperty={handleOpenPropertyDetail}
+          />
+        )}
+
+        {/* VIEW 2: CARDS VIEW */}
+        {viewMode === 'cards' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredProperties.length === 0 ? (
+              <div className="col-span-full p-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border text-xs">
+                No properties match the selected filters.
+              </div>
+            ) : (
+              filteredProperties.map((prop) => (
+                <Card
+                  key={prop.id}
+                  className="p-4 bg-card border-border hover:border-primary/50 transition-all shadow-xs flex flex-col justify-between cursor-pointer group"
+                  onClick={() => handleOpenPropertyDetail(prop)}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Badge
+                            variant={prop.ownership_type === 'OWNED' ? 'default' : 'secondary'}
+                            className="text-[10px]"
+                          >
+                            {prop.ownership_type || 'LEASED'}
+                          </Badge>
+                          {prop.is_geocoded && (
+                            <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30">
+                              Geocoded
+                            </Badge>
+                          )}
+                        </div>
+                        <h3 className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">
+                          {prop.name}
+                        </h3>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-1 transition-transform shrink-0" />
+                    </div>
+
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                      {prop.address}, {prop.city}, {prop.country}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-border/60">
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">Owner / Entity</span>
+                        <span className="font-semibold text-foreground truncate block">
+                          {prop.legal_owner || prop.responsible_legal_entity || 'ZenaTech Operating'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">Building Area</span>
+                        <span className="font-semibold text-foreground">
+                          {(prop.building_area || prop.square_feet || 0).toLocaleString()} sqft
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">Usable Area</span>
+                        <span className="font-medium text-foreground">
+                          {(prop.usable_area || prop.square_feet || 0).toLocaleString()} sqft
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block text-[10px]">Year Built</span>
+                        <span className="font-medium text-foreground">{prop.year_built || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 mt-3 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="font-mono text-[10px]">{prop.property_code || 'PROP-HQ'}</span>
+                    <span className="text-primary font-medium flex items-center gap-0.5">
+                      View 6 Tabs <ArrowRight className="w-3 h-3 ml-0.5" />
+                    </span>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* VIEW 3: TABLE VIEW */}
+        {viewMode === 'table' && (
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <tr>
+                    <th className="p-3">Property / Address</th>
+                    <th className="p-3">Owner / Company</th>
+                    <th className="p-3">Location</th>
+                    <th className="p-3">Building Area</th>
+                    <th className="p-3">Usable Area</th>
+                    <th className="p-3">Ownership</th>
+                    <th className="p-3">Year Built</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredProperties.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                        No properties found matching filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProperties.map((prop) => (
+                      <tr
+                        key={prop.id}
+                        onClick={() => handleOpenPropertyDetail(prop)}
+                        className="hover:bg-muted/30 cursor-pointer transition-colors"
+                      >
+                        <td className="p-3">
+                          <span className="font-bold text-foreground block">{prop.name}</span>
+                          <span className="text-muted-foreground text-[11px]">{prop.address}</span>
+                        </td>
+                        <td className="p-3 font-medium text-foreground">
+                          {prop.legal_owner || prop.owning_company || prop.responsible_legal_entity || 'ZenaTech LLC'}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-1 text-foreground">
+                            <span>{prop.city}, {prop.country}</span>
+                            {prop.is_geocoded && (
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3 font-mono">
+                          {(prop.building_area || prop.square_feet || 0).toLocaleString()} sqft
+                        </td>
+                        <td className="p-3 font-mono text-muted-foreground">
+                          {(prop.usable_area || 0).toLocaleString()} sqft
+                        </td>
+                        <td className="p-3">
+                          <Badge
+                            variant={prop.ownership_type === 'OWNED' ? 'default' : 'secondary'}
+                            className="text-[10px]"
+                          >
+                            {prop.ownership_type || 'LEASED'}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-muted-foreground">{prop.year_built || 'N/A'}</td>
+                        <td className="p-3 text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenPropertyDetail(prop);
+                            }}
+                          >
+                            <span>Details</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+
+
+      {/* Add Property via Document Extraction Modal */}
+      <AddPropertyDocumentModal
+        isOpen={isAddDocModalOpen}
+        onClose={() => setIsAddDocModalOpen(false)}
+        onPropertyCreated={(newProp) => handleOpenPropertyDetail(newProp)}
+        onOpenReviewDetail={(job) => {
+          setIsAddDocModalOpen(false);
+          handleOpenReview(job);
         }}
+      />
+
+      {/* Side-by-Side Review Screen Modal */}
+      <DocumentReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        onBack={() => {
+          setIsReviewModalOpen(false);
+          setIsAddDocModalOpen(true);
+        }}
+        job={selectedReviewJob}
+        onPropertySaved={(savedProp) => handleOpenPropertyDetail(savedProp)}
       />
     </div>
   );

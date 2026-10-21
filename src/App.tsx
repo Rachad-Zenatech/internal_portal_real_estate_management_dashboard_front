@@ -9,8 +9,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 const AppShell = lazy(() => import("./components/AppShell/AppShell"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const PortfolioPage = lazy(() => import("./pages/RealEstate/PortfolioPage"));
+const PropertiesPage = lazy(() => import("./pages/RealEstate/PropertiesPage"));
 const BookingsPage = lazy(() => import("./pages/RealEstate/BookingsPage"));
-const DocumentsPage = lazy(() => import("./pages/RealEstate/DocumentsPage"));
 const PaymentsPage = lazy(() => import("./pages/RealEstate/PaymentsPage"));
 
 const Users = lazy(() => import("./pages/Configurations/Users"));
@@ -83,6 +83,22 @@ function App() {
                 }
               />
               <Route
+                path="/real-estate/properties"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_PROPERTIES">
+                    <PropertiesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/real-estate/stays"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_BOOKINGS">
+                    <BookingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/real-estate/bookings"
                 element={
                   <ProtectedRoute navigationCode="REAL_ESTATE_BOOKINGS">
@@ -91,10 +107,10 @@ function App() {
                 }
               />
               <Route
-                path="/real-estate/documents"
+                path="/real-estate/accounting"
                 element={
-                  <ProtectedRoute navigationCode="REAL_ESTATE_DOCUMENTS">
-                    <DocumentsPage />
+                  <ProtectedRoute navigationCode="REAL_ESTATE_PAYMENTS">
+                    <PaymentsPage />
                   </ProtectedRoute>
                 }
               />

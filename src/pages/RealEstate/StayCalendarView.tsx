@@ -33,6 +33,7 @@ import {
   Key,
   Building2,
   Plus,
+  LayoutList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -108,6 +109,7 @@ export default function StayCalendarView({
 }: StayCalendarProps) {
   const [search, setSearch] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('ALL');
+  const [viewLayout, setViewLayout] = useState<'timeline' | 'calendar'>('timeline');
   const [statusFilter, setStatusFilter] = useState<StayStatusBucket | null>(null);
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [dayInPopup, setDayInPopup] = useState<Date | null>(null);
@@ -427,15 +429,64 @@ export default function StayCalendarView({
         ))}
       </div>
 
-      {/* The Calendar (Matching FollowUpCalendar.tsx exactly) */}
-      <FollowUpCalendarGrid
-        monthStart={monthStart}
-        monthCount={monthCount}
-        days={days}
-        staysByDay={staysByDay}
-        onMonthChange={setMonth}
-        onDayClick={setDayInPopup}
-      />
+      {/* View Layout Switcher */}
+      <div className="flex items-center justify-between border-b border-border pb-2">
+        <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-xl border border-border">
+          <Button
+            size="sm"
+            variant={viewLayout === 'timeline' ? 'default' : 'ghost'}
+            onClick={() => setViewLayout('timeline')}
+            className={`h-7 text-xs gap-1.5 cursor-pointer ${
+              viewLayout === 'timeline' ? 'bg-indigo-600 text-white' : 'text-muted-foreground'
+            }`}
+          >
+            <LayoutList className="w-3.5 h-3.5" />
+            <span>Unit Timeline (Rows)</span>
+          </Button>
+          <Button
+            size="sm"
+            variant={viewLayout === 'calendar' ? 'default' : 'ghost'}
+            onClick={() => setViewLayout('calendar')}
+            className={`h-7 text-xs gap-1.5 cursor-pointer ${
+              viewLayout === 'calendar' ? 'bg-indigo-600 text-white' : 'text-muted-foreground'
+            }`}
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            <span>Monthly Calendar Grid</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* The Calendar / Timeline */}
+      {viewLayout === 'timeline' ? (
+        <UnitTimelineGrid
+          monthStart={monthStart}
+          units={units.filter((u) => {
+            if (selectedCity !== 'ALL' && u.city?.toLowerCase() !== selectedCity.toLowerCase()) {
+              return false;
+            }
+            if (selectedUnitId !== 'ALL' && u.id !== selectedUnitId) {
+              return false;
+            }
+            return true;
+          })}
+          bookings={scopedStays}
+          todayStr={todayStr}
+          onMonthChange={setMonth}
+          onOpenBookingModal={onOpenBookingModal}
+          onSelectStay={setSelectedStayForDetail}
+        />
+      ) : (
+        <FollowUpCalendarGrid
+          monthStart={monthStart}
+          monthCount={monthCount}
+          days={days}
+          staysByDay={staysByDay}
+          onMonthChange={setMonth}
+          onDayClick={setDayInPopup}
+        />
+      )}
+
 
       {/* Day Popup Modal (Matching M&A Day Popup) */}
       <Dialog open={dayInPopup !== null} onOpenChange={(open) => !open && setDayInPopup(null)}>
@@ -826,6 +877,172 @@ const FollowUpCalendarGrid = memo(function FollowUpCalendarGrid({
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+});
+
+/** Memoized unit-row timeline component with units as rows and month days as columns */
+const UnitTimelineGrid = memo(function UnitTimelineGrid({
+  monthStart,
+  units,
+  bookings,
+  todayStr,
+  onMonthChange,
+  onOpenBookingModal,
+  onSelectStay,
+}: {
+  monthStart: Date;
+  units: Unit[];
+  bookings: Stay[];
+  todayStr: string;
+  onMonthChange: (month: Date) => void;
+  onOpenBookingModal: (prefill?: { unit_id?: string; check_in_date?: string }) => void;
+  onSelectStay: (stay: Stay) => void;
+}) {
+  const daysInMonth = eachDayOfInterval({
+    start: startOfMonth(monthStart),
+    end: endOfMonth(monthStart),
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Month Navigation Header */}
+      <div className="flex items-end justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+            {format(monthStart, 'MMMM yyyy')} — Unit Availability Timeline
+          </h2>
+          <p className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {units.length} unit{units.length === 1 ? '' : 's'} across global portfolio
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 cursor-pointer"
+            onClick={() => {
+              const prev = new Date(monthStart);
+              prev.setMonth(prev.getMonth() - 1);
+              onMonthChange(startOfMonth(prev));
+            }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs font-medium cursor-pointer"
+            onClick={() => onMonthChange(startOfMonth(new Date()))}
+          >
+            Today
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 cursor-pointer"
+            onClick={() => {
+              const next = new Date(monthStart);
+              next.setMonth(next.getMonth() + 1);
+              onMonthChange(startOfMonth(next));
+            }}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Horizontal Scrollable Table */}
+      <div className="overflow-x-auto border border-border rounded-xl bg-card shadow-xs">
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr className="bg-muted/50 border-b border-border text-muted-foreground font-semibold">
+              <th className="py-2.5 px-3 min-w-[220px] sticky left-0 bg-muted/95 backdrop-blur z-20 border-r border-border text-left">
+                Unit & Property
+              </th>
+              {daysInMonth.map((d) => {
+                const dStr = format(d, 'yyyy-MM-dd');
+                const isCurrent = dStr === todayStr;
+                return (
+                  <th
+                    key={dStr}
+                    className={`py-2 px-1 text-center min-w-[36px] font-mono border-r border-border/50 text-[11px] ${
+                      isCurrent ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold' : ''
+                    }`}
+                  >
+                    <div>{format(d, 'EE')[0]}</div>
+                    <div className="text-[12px]">{format(d, 'd')}</div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/60">
+            {units.length === 0 ? (
+              <tr>
+                <td colSpan={daysInMonth.length + 1} className="py-8 text-center text-muted-foreground">
+                  No units matching selected filters.
+                </td>
+              </tr>
+            ) : (
+              units.map((u) => {
+                const unitBookings = bookings.filter((b) => b.unit_id === u.id && b.status !== 'CANCELLED');
+                return (
+                  <tr key={u.id} className="hover:bg-muted/10 transition-colors">
+                    <td className="py-2 px-3 sticky left-0 bg-card z-10 border-r border-border text-left shadow-xs">
+                      <div className="font-bold text-xs text-foreground truncate max-w-[200px]">
+                        Unit #{u.unit_number}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+                        {u.property_name || 'Property'} • {u.city}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground/80 mt-0.5">
+                        {u.bedrooms} Bed • Cap {u.guest_capacity}
+                      </div>
+                    </td>
+                    {daysInMonth.map((d) => {
+                      const dStr = format(d, 'yyyy-MM-dd');
+                      // Checkout is exclusive: stays cover days check_in <= d < check_out
+                      const stay = unitBookings.find(
+                        (b) => b.check_in_date <= dStr && dStr < b.check_out_date
+                      );
+                      const isCurrent = dStr === todayStr;
+                      if (stay) {
+                        return (
+                          <td
+                            key={dStr}
+                            onClick={() => onSelectStay(stay)}
+                            className="p-0.5 border-r border-border/40 text-center cursor-pointer"
+                            title={`${stay.employee_name} (${stay.check_in_date} to ${stay.check_out_date})`}
+                          >
+                            <div className="h-8 w-full rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 border border-indigo-500/40 flex items-center justify-center text-[10px] font-semibold truncate px-1">
+                              {stay.employee_name?.split(' ')[0] || 'Stay'}
+                            </div>
+                          </td>
+                        );
+                      }
+                      return (
+                        <td
+                          key={dStr}
+                          onClick={() => onOpenBookingModal({ unit_id: u.id, check_in_date: dStr })}
+                          className={`p-0.5 border-r border-border/40 text-center cursor-pointer group hover:bg-emerald-500/10 ${
+                            isCurrent ? 'bg-indigo-500/5' : ''
+                          }`}
+                          title={`Click to book Unit #${u.unit_number} starting ${dStr}`}
+                        >
+                          <div className="h-8 w-full rounded flex items-center justify-center text-transparent group-hover:text-emerald-600 transition-colors text-xs font-bold">
+                            +
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
