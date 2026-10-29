@@ -156,7 +156,7 @@ export default function RealtorLocationMapExplorer({ properties }: RealtorLocati
   const navigate = useNavigate();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<Map<string, L.Marker>>(new Map());
+  const markersRef = useRef<L.Marker[]>([]);
   const listItemsRef = useRef<Record<string, HTMLDivElement | null>>({});
 
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -223,6 +223,7 @@ export default function RealtorLocationMapExplorer({ properties }: RealtorLocati
         minZoom: 2,
         maxZoom: 18,
         zoomControl: false,
+        worldCopyJump: true,
       });
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -283,7 +284,7 @@ export default function RealtorLocationMapExplorer({ properties }: RealtorLocati
     if (!map) return;
 
     markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current.clear();
+    markersRef.current = [];
 
     filteredProperties.forEach((prop) => {
       const [lat, lng] = getCoords(prop);
@@ -323,14 +324,18 @@ export default function RealtorLocationMapExplorer({ properties }: RealtorLocati
         popupAnchor: [0, -32],
       });
 
-      const marker = L.marker([lat, lng], { icon: customIcon });
+      // Render markers across primary world and wrapped copies (-360, 0, +360)
+      // so when dragging left or right, all places continuously appear
+      [-360, 0, 360].forEach((lngOffset) => {
+        const marker = L.marker([lat, lng + lngOffset], { icon: customIcon });
 
-      marker.on('click', () => {
-        handleSelectProperty(prop, false);
+        marker.on('click', () => {
+          handleSelectProperty(prop, false);
+        });
+
+        marker.addTo(map);
+        markersRef.current.push(marker);
       });
-
-      marker.addTo(map);
-      markersRef.current.set(prop.id, marker);
     });
   }, [filteredProperties, selectedProperty?.id, hoveredPropertyId]);
 
