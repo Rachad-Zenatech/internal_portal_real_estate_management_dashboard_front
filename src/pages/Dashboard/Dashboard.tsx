@@ -27,7 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import SpreadsheetImportModal from './RealEstate/SpreadsheetImportModal';
+import SpreadsheetImportModal from '../RealEstate/SpreadsheetImportModal';
 import RealtorLocationMapExplorer from '@/components/RealEstate/RealtorLocationMapExplorer';
 
 // Helper to map country to Region & Flag
