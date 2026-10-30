@@ -15,6 +15,7 @@ import {
   LogOut,
   Sparkles,
   Filter,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ export default function BookingsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
 
   // New Booking State
   const [newBooking, setNewBooking] = useState(() => ({
@@ -63,33 +65,121 @@ export default function BookingsPage() {
     special_requests: '',
   }));
 
-  const handleOpenBookingModal = (prefill?: { unit_id?: string; check_in_date?: string }) => {
-    if (prefill?.unit_id) {
-      const checkIn = prefill.check_in_date || new Date().toISOString().split('T')[0];
-      const checkOut = new Date(new Date(checkIn).getTime() + 4 * 86400000).toISOString().split('T')[0];
-      setNewBooking((prev) => ({
-        ...prev,
-        unit_id: prefill.unit_id!,
-        check_in_date: checkIn,
-        check_out_date: checkOut,
-      }));
-    } else if (units.length > 0 && !newBooking.unit_id) {
-      setNewBooking((prev) => ({ ...prev, unit_id: units[0].id }));
-    }
-    setIsBookModalOpen(true);
-  };
-
   // Load Bookings
   const { data: bookings = [], isLoading } = useQuery({
     queryKey: ['real-estate-bookings', selectedCity, selectedStatus],
     queryFn: () => realEstateService.getBookings({ city: selectedCity, status: selectedStatus }),
   });
 
-  // Load Units for the booking modal dropdown
+  // Load All Units
   const { data: units = [] } = useQuery({
     queryKey: ['real-estate-units-all'],
     queryFn: () => realEstateService.getUnits(),
   });
+
+  // Load All Existing Properties
+  const { data: properties = [] } = useQuery({
+    queryKey: ['real-estate-properties-all'],
+    queryFn: () => realEstateService.getProperties(),
+  });
+
+  const handleOpenBookingModal = (prefill?: { unit_id?: string; check_in_date?: string }) => {
+    let targetUnitId = prefill?.unit_id || newBooking.unit_id;
+    let targetPropId = selectedPropertyId;
+
+    if (prefill?.unit_id) {
+      targetUnitId = prefill.unit_id;
+      const foundUnit = units.find((u) => u.id === prefill.unit_id);
+      if (foundUnit) {
+        targetPropId = foundUnit.property_id;
+      }
+    } else if (!targetPropId && properties.length > 0) {
+      const firstCondo = properties.find((p) => p.property_category === 'COMPANY_CONDO') || properties[0];
+      targetPropId = firstCondo.id;
+      const propUnit = units.find((u) => u.property_id === targetPropId);
+      if (propUnit) {
+        targetUnitId = propUnit.id;
+      }
+    }
+
+    if (targetPropId) {
+      setSelectedPropertyId(targetPropId);
+    }
+
+    const checkIn = prefill?.check_in_date || newBooking.check_in_date || new Date().toISOString().split('T')[0];
+    const checkOut = new Date(new Date(checkIn).getTime() + 4 * 86400000).toISOString().split('T')[0];
+
+    setNewBooking((prev) => ({
+      ...prev,
+      unit_id: targetUnitId || '',
+      check_in_date: checkIn,
+      check_out_date: checkOut,
+    }));
+    setIsBookModalOpen(true);
+  };
+
+  const handleSelectProperty = (propId: string) => {
+    setSelectedPropertyId(propId);
+    const propUnits = units.filter((u) => u.property_id === propId);
+    if (propUnits.length > 0) {
+      setNewBooking((prev) => ({ ...prev, unit_id: propUnits[0].id }));
+    } else {
+      setNewBooking((prev) => ({ ...prev, unit_id: '' }));
+    }
+  };
+
+  // Units belonging to the currently selected property
+  const unitsForSelectedProperty = useMemo(() => {
+    if (!selectedPropertyId) return units;
+    return units.filter((u) => u.property_id === selectedPropertyId);
+  }, [units, selectedPropertyId]);
+
+  const selectedUnitDetails = useMemo(() => {
+    if (newBooking.unit_id) {
+      return units.find((u) => u.id === newBooking.unit_id) || null;
+    }
+    return unitsForSelectedProperty.length > 0 ? unitsForSelectedProperty[0] : null;
+  }, [units, newBooking.unit_id, unitsForSelectedProperty]);
+
+  const selectedPropertyDetails = useMemo(() => {
+    if (selectedPropertyId) {
+      return properties.find((p) => p.id === selectedPropertyId) || null;
+    }
+    if (selectedUnitDetails) {
+      return properties.find((p) => p.id === selectedUnitDetails.property_id) || null;
+    }
+    return null;
+  }, [properties, selectedPropertyId, selectedUnitDetails]);
+
+  // Active bookings on the selected unit to prevent overlapping dates
+  const activeBookingsForUnit = useMemo(() => {
+    if (!newBooking.unit_id) return [];
+    return bookings.filter((b) => b.unit_id === newBooking.unit_id && b.status !== 'CANCELLED');
+  }, [bookings, newBooking.unit_id]);
+
+  // Standard booking platform conflict check
+  const bookingConflict = useMemo(() => {
+    if (!newBooking.unit_id || !newBooking.check_in_date || !newBooking.check_out_date) {
+      return null;
+    }
+    if (newBooking.check_out_date <= newBooking.check_in_date) {
+      return {
+        type: 'invalid_range',
+        message: 'Check-out date must be strictly after check-in date (at least 1 night stay).',
+      };
+    }
+    const overlapping = activeBookingsForUnit.find(
+      (b) => newBooking.check_in_date < b.check_out_date && newBooking.check_out_date > b.check_in_date
+    );
+    if (overlapping) {
+      return {
+        type: 'overlap',
+        stay: overlapping,
+        message: `Unavailable: This condo is already booked by ${overlapping.employee_name} from ${overlapping.check_in_date} to ${overlapping.check_out_date}. Like other booking platforms, overlapping dates cannot be reserved.`,
+      };
+    }
+    return null;
+  }, [activeBookingsForUnit, newBooking.unit_id, newBooking.check_in_date, newBooking.check_out_date]);
 
   // Create Booking Mutation
   const createBookingMutation = useMutation({
@@ -166,8 +256,6 @@ export default function BookingsPage() {
         );
     }
   };
-
-  const selectedUnitDetails = units.find((u) => u.id === newBooking.unit_id);
 
   const stayNights = useMemo(() => {
     if (!newBooking.check_in_date || !newBooking.check_out_date) return 0;
@@ -473,49 +561,186 @@ export default function BookingsPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-2 text-xs">
-            {/* Unit Selector */}
-            <div>
-              <label className="font-semibold text-foreground block mb-1">Select Condo / Unit</label>
+            {/* 1. Property Selector (Mapping all existing properties) */}
+            <div className="space-y-1">
+              <label className="font-semibold text-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Select Property</span>
+                </span>
+                <span className="text-[11px] text-muted-foreground font-normal">
+                  {properties.length} Properties in Portfolio
+                </span>
+              </label>
               <Select
-                value={newBooking.unit_id}
-                onValueChange={(val) => setNewBooking({ ...newBooking, unit_id: val })}
+                value={selectedPropertyId}
+                onValueChange={handleSelectProperty}
               >
                 <SelectTrigger className="h-10 text-xs">
-                  <SelectValue placeholder="Choose unit..." />
+                  <SelectValue placeholder="Choose a property or condo..." />
                 </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {units.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.city} • {u.property_name} (Unit #{u.unit_number}) - {u.bedrooms} Bed / {u.max_occupants} Guests max
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-72">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Corporate Condos & Residences
+                  </div>
+                  {properties
+                    .filter((p) => p.property_category === 'COMPANY_CONDO')
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.city} • {p.name} {p.address ? `(${p.address})` : ''}
+                      </SelectItem>
+                    ))}
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-t mt-1 pt-1">
+                    Offices & Commercial Properties
+                  </div>
+                  {properties
+                    .filter((p) => p.property_category !== 'COMPANY_CONDO')
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.city} • {p.name} ({p.property_category || p.property_type || 'Office'})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
+            </div>
 
-              {selectedUnitDetails && (
-                <div className="mt-2.5 p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 text-xs text-indigo-950 dark:text-indigo-200 space-y-1">
-                  <div className="font-bold flex items-center justify-between">
-                    <span>{selectedUnitDetails.property_name} • Unit #{selectedUnitDetails.unit_number}</span>
-                    <Badge variant="outline" className="text-[10px] bg-background">
-                      {selectedUnitDetails.city}
+            {/* 2. Unit Selector for Selected Property (if multiple units exist) */}
+            {unitsForSelectedProperty.length > 1 && (
+              <div className="space-y-1">
+                <label className="font-semibold text-foreground flex items-center justify-between">
+                  <span>Select Condo Unit / Suite</span>
+                  <span className="text-[11px] text-muted-foreground font-normal">
+                    {unitsForSelectedProperty.length} units at this location
+                  </span>
+                </label>
+                <Select
+                  value={newBooking.unit_id}
+                  onValueChange={(val) => setNewBooking({ ...newBooking, unit_id: val })}
+                >
+                  <SelectTrigger className="h-10 text-xs">
+                    <SelectValue placeholder="Choose unit..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {unitsForSelectedProperty.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        Unit #{u.unit_number} {u.unit_type ? `(${u.unit_type})` : ''} - {u.bedrooms} Bed / {u.guest_capacity || u.max_occupants || 2} Guests max
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Selected Property & Unit Details Card */}
+            {(selectedUnitDetails || selectedPropertyDetails) && (
+              <div className="p-3.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-xs text-indigo-950 dark:text-indigo-200 space-y-1.5">
+                <div className="font-bold flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>
+                      {selectedPropertyDetails?.name || selectedUnitDetails?.property_name || 'Company Condo'}
+                      {selectedUnitDetails?.unit_number ? ` • Unit #${selectedUnitDetails.unit_number}` : ''}
+                    </span>
+                  </span>
+                  <Badge variant="outline" className="text-[10px] bg-background">
+                    {selectedPropertyDetails?.city || selectedUnitDetails?.city || 'Location'}
+                  </Badge>
+                </div>
+                <div className="text-muted-foreground text-[11px]">
+                  {selectedPropertyDetails?.address || selectedUnitDetails?.address || 'Corporate Executive Condo'}
+                </div>
+                <div className="flex flex-wrap gap-3 text-[11px] text-indigo-600 dark:text-indigo-300 pt-0.5">
+                  <span>{selectedUnitDetails?.bedrooms || 2} Bedrooms</span>
+                  <span>•</span>
+                  <span>{selectedUnitDetails?.bathrooms || 1.5} Bathrooms</span>
+                  {selectedUnitDetails?.square_feet && (
+                    <>
+                      <span>•</span>
+                      <span>{selectedUnitDetails.square_feet} sq ft</span>
+                    </>
+                  )}
+                  <span>•</span>
+                  <span>Max {selectedUnitDetails?.guest_capacity || selectedUnitDetails?.max_occupants || 4} Guests</span>
+                </div>
+              </div>
+            )}
+
+            {/* Currently Booked Dates (Transparency for user) */}
+            {activeBookingsForUnit.length > 0 && (
+              <div className="p-2.5 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Existing Booked Ranges for this Condo:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeBookingsForUnit.map((b) => (
+                    <Badge
+                      key={b.id}
+                      variant="outline"
+                      className="text-[10px] border-amber-500/40 text-amber-900 dark:text-amber-200 bg-amber-500/10"
+                    >
+                      {b.check_in_date} → {b.check_out_date} ({b.employee_name})
                     </Badge>
-                  </div>
-                  <div className="text-muted-foreground text-[11px]">{selectedUnitDetails.address}</div>
-                  <div className="flex gap-3 text-[11px] text-indigo-600 dark:text-indigo-300 pt-0.5">
-                    <span>{selectedUnitDetails.bedrooms} Bedrooms</span>
-                    <span>•</span>
-                    <span>{selectedUnitDetails.bathrooms} Bathrooms</span>
-                    {selectedUnitDetails.square_feet && (
-                      <>
-                        <span>•</span>
-                        <span>{selectedUnitDetails.square_feet} sq ft</span>
-                      </>
-                    )}
-                    <span>•</span>
-                    <span>Max {selectedUnitDetails.max_occupants} Guests</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dates with Live Conflict Checking */}
+            <div className="p-3.5 rounded-xl border border-border bg-muted/20 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-[11px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Stay Dates (Check-in & Check-out)</span>
+                </span>
+                {stayNights > 0 && !bookingConflict && (
+                  <Badge className="bg-indigo-600 text-white text-[10px]">
+                    {stayNights} {stayNights === 1 ? 'Night' : 'Nights'} Duration
+                  </Badge>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-medium text-foreground block mb-1">Check-in Date</label>
+                  <Input
+                    type="date"
+                    value={newBooking.check_in_date}
+                    onChange={(e) => setNewBooking({ ...newBooking, check_in_date: e.target.value })}
+                    className={`h-9 text-xs ${bookingConflict ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
+                  />
+                </div>
+                <div>
+                  <label className="font-medium text-foreground block mb-1">Check-out Date</label>
+                  <Input
+                    type="date"
+                    value={newBooking.check_out_date}
+                    onChange={(e) => setNewBooking({ ...newBooking, check_out_date: e.target.value })}
+                    className={`h-9 text-xs ${bookingConflict ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
+                  />
+                </div>
+              </div>
+
+              {/* Conflict Alert or Availability Confirmation */}
+              {bookingConflict ? (
+                <div className="p-2.5 rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2 animate-in fade-in">
+                  <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-rose-800 dark:text-rose-200">Dates Unavailable</p>
+                    <p className="text-[11px] leading-relaxed">{bookingConflict.message}</p>
                   </div>
                 </div>
-              )}
+              ) : stayNights > 0 ? (
+                <div className="p-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-medium text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Dates available! No conflicting bookings detected.</span>
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {newBooking.check_in_date} to {newBooking.check_out_date}
+                  </span>
+                </div>
+              ) : null}
             </div>
 
             {/* Employee Details */}
@@ -555,45 +780,11 @@ export default function BookingsPage() {
                 <Input
                   type="number"
                   min={1}
-                  max={selectedUnitDetails?.max_occupants || 6}
+                  max={selectedUnitDetails?.guest_capacity || selectedUnitDetails?.max_occupants || 6}
                   value={newBooking.guest_count}
                   onChange={(e) => setNewBooking({ ...newBooking, guest_count: parseInt(e.target.value) || 1 })}
                   className="h-9 text-xs"
                 />
-              </div>
-            </div>
-
-            {/* Dates */}
-            <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Stay Dates
-                </span>
-                {stayNights > 0 && (
-                  <Badge className="bg-indigo-600 text-white text-[10px]">
-                    {stayNights} {stayNights === 1 ? 'Night' : 'Nights'} Duration
-                  </Badge>
-                )}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-medium text-foreground block mb-1">Check-in Date</label>
-                  <Input
-                    type="date"
-                    value={newBooking.check_in_date}
-                    onChange={(e) => setNewBooking({ ...newBooking, check_in_date: e.target.value })}
-                    className="h-9 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="font-medium text-foreground block mb-1">Check-out Date</label>
-                  <Input
-                    type="date"
-                    value={newBooking.check_out_date}
-                    onChange={(e) => setNewBooking({ ...newBooking, check_out_date: e.target.value })}
-                    className="h-9 text-xs"
-                  />
-                </div>
               </div>
             </div>
 
@@ -630,6 +821,7 @@ export default function BookingsPage() {
                 !newBooking.employee_name ||
                 !newBooking.check_in_date ||
                 !newBooking.check_out_date ||
+                !!bookingConflict ||
                 createBookingMutation.isPending
               }
               onClick={() => createBookingMutation.mutate(newBooking)}

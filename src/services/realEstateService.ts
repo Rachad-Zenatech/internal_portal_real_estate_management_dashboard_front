@@ -1,5 +1,15 @@
 import { apiClient } from './apiClient';
 import type {
+  ChargeDetail, GenerateScheduleResult, LeasePaymentPayload, LeasePaymentsResponse, LeasePaymentTerms,
+} from '@/types/leasePayments';
+import type {
+  PropertyRegister,
+  RegisterEntityKey,
+  PropertyAgreement,
+  AgreementAmendment,
+  ComplianceIssue,
+  MaxTermReviewStatus,
+  Party,
   Location,
   Property,
   Unit,
@@ -21,6 +31,8 @@ import type {
   PropertyInspectionFinding,
   PropertyActivityLog,
   ExtractionEngineStatus,
+  PropertyDuplicatesResponse,
+  PropertyMergePayload,
 } from '@/types';
 
 export const realEstateService = {
@@ -57,6 +69,8 @@ export const realEstateService = {
     inventory_status?: string;
     search?: string;
     include_archived?: boolean;
+    occupancy_status?: string;
+    tenure?: string;
   }): Promise<Property[]> {
     const query = new URLSearchParams();
     if (params?.location_id) query.set('location_id', params.location_id);
@@ -68,12 +82,79 @@ export const realEstateService = {
     if (params?.inventory_status && params.inventory_status !== 'ALL') query.set('inventory_status', params.inventory_status);
     if (params?.search) query.set('search', params.search);
     if (params?.include_archived) query.set('include_archived', 'true');
+    if (params?.occupancy_status && params.occupancy_status !== 'ALL') query.set('occupancy_status', params.occupancy_status);
+    if (params?.tenure && params.tenure !== 'ALL') query.set('tenure', params.tenure);
     const qs = query.toString();
     return apiClient.get<Property[]>(`/api/real-estate/properties${qs ? `?${qs}` : ''}`);
   },
 
   async getPropertyDetails(id: string): Promise<Property> {
     return apiClient.get<Property>(`/api/real-estate/properties/${id}`);
+  },
+
+  async getPropertyRegister(id: string): Promise<PropertyRegister> {
+    return apiClient.get<PropertyRegister>(`/api/real-estate/properties/${id}/register`);
+  },
+
+  // --- Property register writes (ownership, acquisition, obligations, assets, work orders, utilities, insurance, compliance) ---
+  async createRegisterRecord(propertyId: string, entity: RegisterEntityKey, data: Record<string, unknown>): Promise<Record<string, any>> {
+    return apiClient.post<Record<string, any>>(`/api/real-estate/properties/${propertyId}/${entity}`, data);
+  },
+
+  async updateRegisterRecord(entity: RegisterEntityKey, recordId: string, data: Record<string, unknown>): Promise<Record<string, any>> {
+    return apiClient.put<Record<string, any>>(`/api/real-estate/${entity}/${recordId}`, data);
+  },
+
+  async deleteRegisterRecord(entity: RegisterEntityKey, recordId: string): Promise<void> {
+    await apiClient.delete(`/api/real-estate/${entity}/${recordId}`);
+  },
+
+  // --- Agreements, amendments and the maximum permissible term ---
+  async createAgreement(propertyId: string, data: Record<string, unknown>): Promise<PropertyAgreement> {
+    return apiClient.post<PropertyAgreement>(`/api/real-estate/properties/${propertyId}/agreements`, data);
+  },
+
+  async updateAgreement(agreementId: string, data: Record<string, unknown>): Promise<PropertyAgreement> {
+    return apiClient.put<PropertyAgreement>(`/api/real-estate/agreements/${agreementId}`, data);
+  },
+
+  async deleteAgreement(agreementId: string): Promise<void> {
+    await apiClient.delete(`/api/real-estate/agreements/${agreementId}`);
+  },
+
+  async changeAgreementStatus(agreementId: string, data: { status: string; actual_termination_date?: string | null; notes?: string | null }): Promise<PropertyAgreement> {
+    return apiClient.post<PropertyAgreement>(`/api/real-estate/agreements/${agreementId}/status`, data);
+  },
+
+  async reviewMaxTerm(
+    agreementId: string,
+    data: { status: MaxTermReviewStatus; max_permissible_end_date?: string | null; max_term_source?: string | null; notes?: string | null },
+  ): Promise<PropertyAgreement> {
+    return apiClient.post<PropertyAgreement>(`/api/real-estate/agreements/${agreementId}/max-term-review`, data);
+  },
+
+  async createAmendment(agreementId: string, data: Record<string, unknown>): Promise<AgreementAmendment> {
+    return apiClient.post<AgreementAmendment>(`/api/real-estate/agreements/${agreementId}/amendments`, data);
+  },
+
+  async approveAmendment(amendmentId: string): Promise<AgreementAmendment> {
+    return apiClient.post<AgreementAmendment>(`/api/real-estate/agreement-amendments/${amendmentId}/approve`, {});
+  },
+
+  async updateComplianceIssue(issueId: string, data: { status: string; resolution_notes?: string | null }): Promise<ComplianceIssue> {
+    return apiClient.put<ComplianceIssue>(`/api/real-estate/compliance-issues/${issueId}`, data);
+  },
+
+  async updateDocumentMetadata(
+    documentId: string,
+    data: { expiry_date?: string | null; document_date?: string | null; signature_status?: string | null; access_classification?: string | null },
+  ): Promise<PropertyDocument> {
+    return apiClient.put<PropertyDocument>(`/api/real-estate/documents/${documentId}/metadata`, data);
+  },
+
+  async getParties(search?: string): Promise<Party[]> {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+    return apiClient.get<Party[]>(`/api/real-estate/parties${qs}`);
   },
 
   async createProperty(data: Partial<Property>): Promise<Property> {
@@ -322,10 +403,18 @@ export const realEstateService = {
     return apiClient.get<PropertyExtractionJob>(`/api/real-estate/property-extraction-jobs/${jobId}`);
   },
 
-  async retryPropertyExtractionJob(jobId: string, engineMode?: string, ocrLanguages?: string): Promise<PropertyExtractionJob> {
+  async retryPropertyExtractionJob(
+    jobId: string,
+    engineMode?: string,
+    ocrLanguages?: string,
+    aiProvider?: string,
+    aiModel?: string
+  ): Promise<PropertyExtractionJob> {
     const params = new URLSearchParams();
     if (engineMode) params.set('engine_mode', engineMode);
     if (ocrLanguages) params.set('ocr_languages', ocrLanguages);
+    if (aiProvider) params.set('ai_provider', aiProvider);
+    if (aiModel) params.set('ai_model', aiModel);
     const qs = params.toString();
     return apiClient.post<PropertyExtractionJob>(`/api/real-estate/property-extraction-jobs/${jobId}/retry${qs ? `?${qs}` : ''}`);
   },
@@ -344,6 +433,11 @@ export const realEstateService = {
 
   async deleteExtractionJob(jobId: string): Promise<void> {
     return apiClient.delete(`/api/real-estate/property-extraction-jobs/${jobId}`);
+  },
+
+  async clearAllExtractionJobs(status?: string): Promise<{ cleared_count: number }> {
+    const qs = status ? `?status=${status}` : '';
+    return apiClient.delete(`/api/real-estate/property-extraction-jobs${qs}`);
   },
 
   async cleanupUnconfirmedExtractionJobs(jobIds?: string[]): Promise<{ count: number }> {
@@ -391,5 +485,78 @@ export const realEstateService = {
 
   async getExtractionEngineStatus(): Promise<ExtractionEngineStatus> {
     return apiClient.get<ExtractionEngineStatus>('/api/real-estate/extraction-engine-status');
+  },
+
+  async getAiModelsStatus(): Promise<{
+    active_provider: 'vllm' | 'gemini' | 'openai' | 'anthropic' | string;
+    active_model: string;
+    active_status: string;
+    providers: Record<
+      string,
+      {
+        name: string;
+        status: string;
+        configured_model: string;
+        available_models?: string[];
+        is_active: boolean;
+        has_api_key?: boolean;
+        notes?: string;
+      }
+    >;
+  }> {
+    return apiClient.get('/api/real-estate/ai-models/status');
+  },
+
+  async switchAiModel(provider: string, modelName?: string): Promise<any> {
+    return apiClient.post('/api/real-estate/ai-models/switch', {
+      provider,
+      model_name: modelName || undefined,
+    });
+  },
+
+  async enrichPropertyWithHomeHarvest(propertyId: string): Promise<{
+    enriched: boolean;
+    message?: string;
+    homeharvest_enrichment?: Record<string, any>;
+    property: Property;
+  }> {
+    return apiClient.post(`/api/real-estate/properties/${propertyId}/enrich-homeharvest`, {});
+  },
+
+  async getPropertyDuplicates(propertyId: string): Promise<PropertyDuplicatesResponse> {
+    return apiClient.get<PropertyDuplicatesResponse>(`/api/real-estate/properties/${propertyId}/duplicates`);
+  },
+
+  async mergeProperties(propertyId: string, payload: PropertyMergePayload): Promise<Property> {
+    return apiClient.post<Property>(`/api/real-estate/properties/${propertyId}/merge`, payload);
+  },
+
+  async deleteProperty(propertyId: string): Promise<void> {
+    return apiClient.delete(`/api/real-estate/properties/${propertyId}`);
+  },
+
+  // Lease payment schedule & payment tracking
+  async getLeasePayments(propertyId: string): Promise<LeasePaymentsResponse> {
+    return apiClient.get<LeasePaymentsResponse>(`/api/real-estate/properties/${propertyId}/lease-payments`);
+  },
+
+  async getLeasePaymentTerms(propertyId: string): Promise<LeasePaymentTerms[]> {
+    return apiClient.get<LeasePaymentTerms[]>(`/api/real-estate/properties/${propertyId}/lease-payment-terms`);
+  },
+
+  async confirmLeasePaymentTerms(leaseId: string): Promise<{ confirmed: boolean }> {
+    return apiClient.post<{ confirmed: boolean }>(`/api/real-estate/agreements/${leaseId}/confirm-payment-terms`, {});
+  },
+
+  async generateLeasePaymentSchedule(leaseId: string): Promise<GenerateScheduleResult> {
+    return apiClient.post<GenerateScheduleResult>(`/api/real-estate/agreements/${leaseId}/payment-schedule`, {});
+  },
+
+  async getScheduledChargeDetail(obligationId: string): Promise<ChargeDetail> {
+    return apiClient.get<ChargeDetail>(`/api/real-estate/payment-schedule/${obligationId}`);
+  },
+
+  async recordLeasePayment(payload: LeasePaymentPayload): Promise<{ payment_id: string; allocated_charges: number }> {
+    return apiClient.post<{ payment_id: string; allocated_charges: number }>('/api/real-estate/lease-payments', payload);
   },
 };

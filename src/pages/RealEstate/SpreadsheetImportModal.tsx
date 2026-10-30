@@ -109,11 +109,12 @@ export default function SpreadsheetImportModal({
         const address = findVal(['address', 'street']) || `${city} Corporate Site`;
         const categoryRaw = String(findVal(['category', 'type', 'use']) || '').toUpperCase();
         
-        let property_category = 'LEASED_OFFICE';
-        if (categoryRaw.includes('HQ') || categoryRaw.includes('OWNED')) property_category = 'OWNED_HQ';
+        let property_category = 'COMMERCIAL_OFFICE';
+        if (categoryRaw.includes('HQ') || categoryRaw.includes('HEADQUARTERS')) property_category = 'CORPORATE_HQ';
         else if (categoryRaw.includes('CONDO') || categoryRaw.includes('RESIDENCE')) property_category = 'COMPANY_CONDO';
         else if (categoryRaw.includes('LAB') || categoryRaw.includes('R&D') || categoryRaw.includes('FACILITY')) property_category = 'RD_FACILITY';
         else if (categoryRaw.includes('WAREHOUSE')) property_category = 'WAREHOUSE';
+        else if (categoryRaw.includes('CO-WORKING') || categoryRaw.includes('COWORKING')) property_category = 'CO_WORKING';
 
         const sqftRaw = findVal(['sq', 'feet', 'area', 'size']);
         const square_feet = Number(sqftRaw) || 0;

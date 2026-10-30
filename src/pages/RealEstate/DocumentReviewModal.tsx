@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { realEstateService } from '@/services/realEstateService';
 import type { Property, PropertyExtractionJob } from '@/types/realEstate';
 import { formatExactFileSize } from '@/lib/utils';
+import { normalizeDateToISO } from '@/utils/dateUtils';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ import {
   ArrowLeft,
   File,
   Loader2,
+  Cpu,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -78,8 +80,48 @@ export default function DocumentReviewModal({
   const [actionType, setActionType] = useState<'CREATE_NEW' | 'UPDATE_EXISTING'>('CREATE_NEW');
   const [targetPropertyId, setTargetPropertyId] = useState<string | null>(null);
 
+  // Ambiguous address confirmation & candidate rejection tracking
+  const [ambiguousAddressConfirmed, setAmbiguousAddressConfirmed] = useState<boolean>(false);
+  const [rejectedCandidateIds, setRejectedCandidateIds] = useState<Set<string>>(new Set());
+
   // Engine selection for retry
   const [selectedEngine, setSelectedEngine] = useState<string>('HYBRID_PYMUPDF_TESSERACT');
+  const [selectedAiProvider, setSelectedAiProvider] = useState<string>('');
+  const [selectedAiModel, setSelectedAiModel] = useState<string>('');
+
+  const { data: aiModelsStatus, refetch: refetchAiModels } = useQuery({
+    queryKey: ['ai-models-status'],
+    queryFn: () => realEstateService.getAiModelsStatus(),
+    enabled: isOpen,
+    staleTime: 15000,
+  });
+
+  useEffect(() => {
+    if (aiModelsStatus?.active_provider) {
+      setSelectedAiProvider(aiModelsStatus.active_provider);
+      if (aiModelsStatus.active_model) {
+        setSelectedAiModel(aiModelsStatus.active_model);
+      }
+    }
+  }, [aiModelsStatus]);
+
+  const handleAiProviderSwitch = async (value: string) => {
+    const [prov, mod] = value.split('|');
+    const cleanProv = prov;
+    const defaultMod = mod || aiModelsStatus?.providers?.[cleanProv]?.configured_model || '';
+
+    setSelectedAiProvider(cleanProv);
+    setSelectedAiModel(defaultMod);
+    try {
+      await realEstateService.switchAiModel(cleanProv, defaultMod);
+      refetchAiModels();
+      toast.success(
+        `Switched AI Extractor to ${cleanProv === 'gemini' ? 'Google Gemini' : cleanProv === 'vllm' ? 'vLLM (self-hosted)' : cleanProv} (${defaultMod})`
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to switch AI model');
+    }
+  };
 
   const totalPages = job?.page_count || 1;
 
@@ -93,9 +135,10 @@ export default function DocumentReviewModal({
 
     const getVal = (f: any) => (f && typeof f === 'object' ? f.normalized_value ?? f.value : f);
     const getSqft = (f: any) => (f && typeof f === 'object' ? f.normalized_sqft ?? f.value : f);
+    const bldName = getVal(firstProp.building_name) || getVal(firstProp.property_name) || getVal(firstProp.address) || 'New Extracted Property';
 
     setFormData({
-      name: getVal(firstProp.property_name) || 'New Extracted Property',
+      name: bldName,
       property_type: getVal(firstProp.property_type) || 'Office',
       property_category: getVal(firstProp.property_category) || 'OWNED_HQ',
       address: getVal(firstProp.address) || '',
@@ -121,7 +164,7 @@ export default function DocumentReviewModal({
       construction_type: getVal(firstProp.construction_type) || '',
       zoning: getVal(firstProp.zoning) || '',
       building_systems: firstProp.building_systems || {},
-      purchase_date: getVal(firstProp.purchase_date) || '',
+      purchase_date: normalizeDateToISO(getVal(firstProp.purchase_date)) || '',
       purchase_price: Number(getVal(firstProp.purchase_price)) || 0,
       purchase_currency: getVal(firstProp.purchase_currency) || 'USD',
     });
@@ -137,6 +180,8 @@ export default function DocumentReviewModal({
     setCurrentPage(1);
     setActiveHighlightBox(null);
     setActiveSnippet(null);
+    setAmbiguousAddressConfirmed(false);
+    setRejectedCandidateIds(new Set());
   }, [job]);
 
   // Jump to page and highlight evidence box
@@ -145,6 +190,7 @@ export default function DocumentReviewModal({
     if (!fieldObj || typeof fieldObj !== 'object') return;
 
     if (fieldObj.source_page) {
+      setViewerMode('image');
       setCurrentPage(fieldObj.source_page);
     }
     if (fieldObj.bounding_box && Array.isArray(fieldObj.bounding_box)) {
@@ -152,8 +198,8 @@ export default function DocumentReviewModal({
     } else {
       setActiveHighlightBox(null);
     }
-    if (fieldObj.supporting_text) {
-      setActiveSnippet(fieldObj.supporting_text);
+    if (fieldObj.supporting_text || fieldObj.supporting_quote || fieldObj.raw_text) {
+      setActiveSnippet(fieldObj.supporting_text || fieldObj.supporting_quote || fieldObj.raw_text);
     } else {
       setActiveSnippet(null);
     }
@@ -163,10 +209,16 @@ export default function DocumentReviewModal({
   const retryMutation = useMutation({
     mutationFn: async () => {
       if (!job) return;
-      return await realEstateService.retryPropertyExtractionJob(job.id, selectedEngine, 'eng');
+      return await realEstateService.retryPropertyExtractionJob(
+        job.id,
+        selectedEngine,
+        'eng',
+        selectedAiProvider,
+        selectedAiModel
+      );
     },
     onSuccess: () => {
-      toast.success(`Job re-queued using ${selectedEngine}`);
+      toast.success(`Job re-queued using ${selectedAiProvider.toUpperCase()} (${selectedAiModel})`);
       queryClient.invalidateQueries({ queryKey: ['property-extraction-job', job?.id] });
     },
     onError: (err: any) => {
@@ -211,6 +263,13 @@ export default function DocumentReviewModal({
   const inspections = job.raw_extracted_data?.inspections || [];
   const warnings = job.validation_warnings || [];
   const proposedDiff = job.proposed_diff || {};
+  const resolutionStatus: 'proposed' | 'needs_review' | 'not_found' | string =
+    job.raw_extracted_data?.resolution_status || 'proposed';
+  const resolutionExplanation: string = job.raw_extracted_data?.resolution_explanation || '';
+  const addressCandidates: any[] = job.raw_extracted_data?.address_candidates || [];
+  const reprocessedSuggestions: any = job.raw_extracted_data?.reprocessed_address_suggestions || null;
+  const requiresExplicitAddressConfirmation =
+    resolutionStatus === 'needs_review' || resolutionStatus === 'not_found';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -256,8 +315,32 @@ export default function DocumentReviewModal({
             </div>
           </div>
 
-          {/* Engine Selector & Retry */}
-          <div className="flex items-center gap-2">
+          {/* Engine & AI Model Selector & Retry */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-muted/40 border border-border rounded-lg px-2 py-0.5">
+              <Cpu className="w-3.5 h-3.5 text-primary shrink-0" />
+              <Select
+                value={`${selectedAiProvider}|${selectedAiModel}`}
+                onValueChange={handleAiProviderSwitch}
+              >
+                <SelectTrigger className="h-7 text-xs w-56 border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectValue placeholder="AI Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiModelsStatus?.providers?.vllm?.configured_model && (
+                    <SelectItem value={`vllm|${aiModelsStatus.providers.vllm.configured_model}`}>
+                      vLLM ({aiModelsStatus.providers.vllm.configured_model}) — Self-hosted
+                    </SelectItem>
+                  )}
+                  <SelectItem value="gemini|gemini-2.5-flash">
+                    Gemini (gemini-2.5-flash) — Cloud
+                  </SelectItem>
+                  <SelectItem value="gemini|gemini-3.1-flash-lite">
+                    Gemini (gemini-3.1-flash-lite) — Fast
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Select value={selectedEngine} onValueChange={setSelectedEngine}>
               <SelectTrigger className="h-8 text-xs w-48">
                 <SelectValue />
@@ -505,6 +588,81 @@ export default function DocumentReviewModal({
               <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
                 {/* TAB 1: BASIC PROPERTY DETAILS */}
                 <TabsContent value="basic" className="m-0 space-y-3.5">
+                  {/* Address Resolution & Candidate Context Banner */}
+                  <div
+                    className={`p-3 rounded-lg border space-y-2 ${
+                      resolutionStatus === 'not_found'
+                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-200'
+                        : resolutionStatus === 'needs_review'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
+                        : 'bg-emerald-500/5 border-emerald-500/20 text-foreground'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-xs flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                        Address Semantic Resolution
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-mono uppercase ${
+                          resolutionStatus === 'not_found'
+                            ? 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                            : resolutionStatus === 'needs_review'
+                            ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                            : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                        }`}
+                      >
+                        {resolutionStatus}
+                      </Badge>
+                    </div>
+                    {resolutionExplanation && (
+                      <p className="text-[11px] leading-relaxed opacity-90">{resolutionExplanation}</p>
+                    )}
+
+                    {/* Reprocessed suggestion notice when user-confirmed address was protected */}
+                    {reprocessedSuggestions && reprocessedSuggestions.selected_properties?.length > 0 && (
+                      <div className="p-2 rounded bg-background/80 border border-border text-[11px] flex items-center justify-between gap-2">
+                        <div>
+                          <span className="font-semibold block text-foreground">
+                            User-Confirmed Address Preserved
+                          </span>
+                          <span className="text-muted-foreground">
+                            Reprocessing suggested:{' '}
+                            <strong>
+                              {reprocessedSuggestions.selected_properties[0]?.street_address}
+                              {reprocessedSuggestions.selected_properties[0]?.unit_number
+                                ? ` Unit ${reprocessedSuggestions.selected_properties[0]?.unit_number}`
+                                : ''}
+                            </strong>
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[10px] px-2 shrink-0"
+                          onClick={() => {
+                            const sug = reprocessedSuggestions.selected_properties[0];
+                            if (!sug) return;
+                            setFormData((p) => ({
+                              ...p,
+                              address: sug.street_address || p.address,
+                              unit_number: sug.unit_number ?? p.unit_number,
+                              city: sug.city || p.city,
+                              state_province: sug.state_province || p.state_province,
+                              postal_code: sug.postal_code ?? p.postal_code,
+                              country: sug.country || p.country,
+                            }));
+                            toast.success('Applied reprocessed address suggestion');
+                          }}
+                        >
+                          Apply Suggestion
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
                   <FieldReviewItem
                     label="Property / Building Name"
                     fieldKey="property_name"
@@ -589,6 +747,170 @@ export default function DocumentReviewModal({
                       isActive={activeFieldKey === 'property_type'}
                     />
                   </div>
+
+                  {/* Detected Address Candidates & Classified Roles Panel */}
+                  {addressCandidates.length > 0 && (
+                    <div className="p-3 rounded-lg border border-border bg-muted/15 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[11px] text-foreground">
+                          Detected Address Candidates & Roles ({addressCandidates.length})
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          Click &ldquo;View source&rdquo; to verify in PDF
+                        </span>
+                      </div>
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {addressCandidates.map((cand: any, cIdx: number) => {
+                          const cid = cand.candidate_id || `cand_${cIdx}`;
+                          const isRejected = rejectedCandidateIds.has(cid);
+                          const isCurrentMatch =
+                            !isRejected &&
+                            formData.address &&
+                            cand.street_address &&
+                            String(formData.address).toLowerCase().trim() ===
+                              String(cand.street_address).toLowerCase().trim() &&
+                            String(formData.unit_number || '').toLowerCase().trim() ===
+                              String(cand.unit_number || '').toLowerCase().trim();
+                          const roles: string[] = cand.roles || ['UNKNOWN'];
+                          const roleLabels: string[] = cand.role_labels || roles;
+
+                          return (
+                            <div
+                              key={cid}
+                              className={`p-2.5 rounded-lg border text-[11px] space-y-1.5 transition-all ${
+                                isRejected
+                                  ? 'opacity-50 bg-muted/30 border-border line-through'
+                                  : isCurrentMatch
+                                  ? 'border-emerald-500/50 bg-emerald-500/5'
+                                  : 'border-border bg-card'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="font-semibold text-foreground">
+                                  {cand.street_address || cand.raw_text}
+                                  {cand.unit_number ? (
+                                    <span className="ml-1.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px]">
+                                      Unit {cand.unit_number}
+                                    </span>
+                                  ) : null}
+                                  {(cand.city || cand.state_province || cand.postal_code) && (
+                                    <span className="block text-[10px] font-normal text-muted-foreground">
+                                      {[cand.city, cand.state_province, cand.postal_code, cand.country]
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {cand.source_page && (
+                                    <button
+                                      type="button"
+                                      onClick={() => highlightEvidence(`cand_${cid}`, cand)}
+                                      className="px-1.5 py-0.5 rounded bg-primary/10 text-primary hover:bg-primary/20 text-[10px] font-mono flex items-center gap-1"
+                                    >
+                                      <Eye className="w-2.5 h-2.5" />
+                                      View source (p.{cand.source_page})
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Role badges */}
+                              <div className="flex flex-wrap gap-1">
+                                {roleLabels.map((lbl: string, rIdx: number) => {
+                                  const rawRole = roles[rIdx] || '';
+                                  const isPremises = rawRole === 'PROPERTY_PREMISES';
+                                  const isBroker = rawRole === 'BROKER_OFFICE';
+                                  return (
+                                    <Badge
+                                      key={rIdx}
+                                      variant="outline"
+                                      className={`text-[9px] py-0 px-1.5 ${
+                                        isPremises
+                                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                          : isBroker
+                                          ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/30'
+                                          : 'bg-muted text-muted-foreground border-border'
+                                      }`}
+                                    >
+                                      {lbl}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+
+                              {cand.supporting_quote && (
+                                <div className="text-[10px] text-muted-foreground italic truncate">
+                                  &ldquo;{cand.supporting_quote}&rdquo;
+                                </div>
+                              )}
+
+                              <div className="flex items-center justify-end gap-1.5 pt-1">
+                                {!isRejected && !isCurrentMatch && cand.street_address && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 text-[10px] px-2"
+                                    onClick={() => {
+                                      setFormData((p) => ({
+                                        ...p,
+                                        address: cand.street_address || p.address,
+                                        unit_number: cand.unit_number ?? '',
+                                        city: cand.city || p.city,
+                                        state_province: cand.state_province || p.state_province,
+                                        postal_code: cand.postal_code ?? '',
+                                        country: cand.country || p.country,
+                                      }));
+                                      setAmbiguousAddressConfirmed(true);
+                                      highlightEvidence(`cand_${cid}`, cand);
+                                      toast.success(
+                                        `Switched property address to ${cand.street_address}${
+                                          cand.unit_number ? ' Unit ' + cand.unit_number : ''
+                                        }`
+                                      );
+                                    }}
+                                  >
+                                    Use This Address
+                                  </Button>
+                                )}
+                                {isCurrentMatch && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                                  >
+                                    Selected Property Address
+                                  </Badge>
+                                )}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 text-[10px] px-2 text-muted-foreground hover:text-rose-600"
+                                  onClick={() => {
+                                    setRejectedCandidateIds((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(cid)) {
+                                        next.delete(cid);
+                                      } else {
+                                        next.add(cid);
+                                      }
+                                      return next;
+                                    });
+                                    if (isCurrentMatch) {
+                                      setFormData((p) => ({ ...p, address: '', unit_number: '', postal_code: '' }));
+                                    }
+                                  }}
+                                >
+                                  {isRejected ? 'Restore' : 'Reject'}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
 
                 {/* TAB 2: OWNERSHIP & LEGAL ATTRIBUTES */}
@@ -919,6 +1241,22 @@ export default function DocumentReviewModal({
                 </div>
               )}
 
+              {requiresExplicitAddressConfirmation && (
+                <label className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-900 dark:text-amber-200 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={ambiguousAddressConfirmed}
+                    onChange={(e) => setAmbiguousAddressConfirmed(e.target.checked)}
+                    className="mt-0.5 rounded border-amber-500 text-primary focus:ring-primary"
+                  />
+                  <span>
+                    <strong>Ambiguous or Unresolved Address:</strong> I have reviewed the source document and confirm
+                    that <strong>{formData.address || 'the entered address'}</strong> is the actual subject property
+                    premises (and not a broker, landlord, or correspondence office).
+                  </span>
+                </label>
+              )}
+
               <div className="flex items-center justify-between">
                 <Button variant="ghost" size="sm" onClick={onClose} className="text-xs">
                   Cancel
@@ -926,7 +1264,11 @@ export default function DocumentReviewModal({
                 <Button
                   size="sm"
                   className="gap-2 text-xs shadow-xs"
-                  disabled={confirmMutation.isPending || !formData.address}
+                  disabled={
+                    confirmMutation.isPending ||
+                    !formData.address ||
+                    (requiresExplicitAddressConfirmation && !ambiguousAddressConfirmed)
+                  }
                   onClick={() => confirmMutation.mutate()}
                 >
                   <Building2 className="w-3.5 h-3.5" />

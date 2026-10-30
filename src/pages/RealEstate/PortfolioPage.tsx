@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { realEstateService } from '@/services/realEstateService';
 import type { RealEstateSummary, Property, PropertyExtractionJob } from '@/types/realEstate';
+import { formatPropertyCategory } from '@/types/realEstate';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Building2,
@@ -129,7 +130,7 @@ export default function PortfolioPage() {
   }, [properties, selectedOwner, selectedCountry, selectedCity, selectedType, searchQuery]);
 
   const handleOpenPropertyDetail = (prop: Property) => {
-    navigate(`/real-estate/properties?property_id=${prop.id}`);
+    navigate(`/real-estate/properties/${prop.id}`);
   };
 
   const handleOpenReview = (job: PropertyExtractionJob) => {
@@ -198,11 +199,11 @@ export default function PortfolioPage() {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 text-xs gap-1 border-amber-500/40 text-amber-800 dark:text-amber-200"
-              onClick={() => handleOpenReview(extractionJobs[0])}
+              className="h-7 text-xs gap-1 border-amber-500/40 text-amber-800 dark:text-amber-200 cursor-pointer"
+              onClick={() => setIsAddDocModalOpen(true)}
             >
               <Eye className="w-3 h-3" />
-              Review Latest Extraction ({extractionJobs[0].document_title || extractionJobs[0].document_filename})
+              Review Extractions ({extractionJobs.length} Ready)
             </Button>
           </div>
         </div>
@@ -406,6 +407,11 @@ export default function PortfolioPage() {
                           >
                             {prop.ownership_type || 'LEASED'}
                           </Badge>
+                          {prop.property_category && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {formatPropertyCategory(prop.property_category, prop.ownership_type)}
+                            </Badge>
+                          )}
                           {prop.is_geocoded && (
                             <Badge variant="outline" className="text-[9px] text-emerald-600 border-emerald-500/30">
                               Geocoded
@@ -515,12 +521,19 @@ export default function PortfolioPage() {
                           {(prop.usable_area || 0).toLocaleString()} sqft
                         </td>
                         <td className="p-3">
-                          <Badge
-                            variant={prop.ownership_type === 'OWNED' ? 'default' : 'secondary'}
-                            className="text-[10px]"
-                          >
-                            {prop.ownership_type || 'LEASED'}
-                          </Badge>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge
+                              variant={prop.ownership_type === 'OWNED' ? 'default' : 'secondary'}
+                              className="text-[10px]"
+                            >
+                              {prop.ownership_type || 'LEASED'}
+                            </Badge>
+                            {prop.property_category && (
+                              <Badge variant="outline" className="text-[10px]">
+                                {formatPropertyCategory(prop.property_category, prop.ownership_type)}
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="p-3 text-muted-foreground">{prop.year_built || 'N/A'}</td>
                         <td className="p-3 text-right">
@@ -552,6 +565,7 @@ export default function PortfolioPage() {
       {/* Add Property via Document Extraction Modal */}
       <AddPropertyDocumentModal
         isOpen={isAddDocModalOpen}
+        initialJobs={extractionJobs.length > 0 ? extractionJobs : undefined}
         onClose={() => setIsAddDocModalOpen(false)}
         onPropertyCreated={(newProp) => handleOpenPropertyDetail(newProp)}
         onOpenReviewDetail={(job) => {

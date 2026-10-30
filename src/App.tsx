@@ -91,6 +91,14 @@ function App() {
                 }
               />
               <Route
+                path="/real-estate/properties/:propertyId"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_PROPERTIES">
+                    <PropertiesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/real-estate/stays"
                 element={
                   <ProtectedRoute navigationCode="REAL_ESTATE_BOOKINGS">

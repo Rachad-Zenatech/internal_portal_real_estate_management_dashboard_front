@@ -302,24 +302,28 @@ export default function RealtorLocationMapExplorer({ properties }: RealtorLocati
         : '🏢 Office';
 
       const iconHtml = `
-        <div class="relative group cursor-pointer transition-transform duration-200 ${isSelected ? 'scale-125 z-50' : isHovered ? 'scale-110 z-40' : 'scale-100 z-10'}">
-          <div class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow-lg border-2 ${
-            isSelected
-              ? 'bg-slate-900 border-indigo-400 ring-4 ring-indigo-500/40'
-              : 'border-white/90'
-          }" style="background-color: ${isSelected ? '#0f172a' : catColor.hex};">
-            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-            <span class="whitespace-nowrap">${priceOrType}</span>
+        <div style="position: absolute; bottom: 0; left: 50%; transform: translate(-50%, 0); width: max-content; pointer-events: auto;">
+          <div class="relative group cursor-pointer transition-transform duration-200 origin-bottom flex flex-col items-center select-none ${
+            isSelected ? 'scale-125 z-50' : isHovered ? 'scale-110 z-40' : 'scale-100 z-10'
+          }">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-lg border-2 ${
+              isSelected
+                ? 'bg-slate-900 border-indigo-400 ring-4 ring-indigo-500/40'
+                : 'border-white/90'
+            }" style="background-color: ${isSelected ? '#0f172a' : catColor.hex};">
+              <span class="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0"></span>
+              <span class="whitespace-nowrap font-semibold">${priceOrType}</span>
+            </div>
+            <div class="w-2 h-2 -mt-0.5 rotate-45 border-r-2 border-b-2 border-white/80 flex-shrink-0" style="background-color: ${isSelected ? '#0f172a' : catColor.hex};"></div>
           </div>
-          <div class="w-2 h-2 mx-auto -mt-0.5 rotate-45 border-r-2 border-b-2 border-white/80" style="background-color: ${isSelected ? '#0f172a' : catColor.hex};"></div>
         </div>
       `;
 
       const customIcon = L.divIcon({
         className: 'realtor-map-custom-marker',
         html: iconHtml,
-        iconSize: [80, 32],
-        iconAnchor: [40, 32],
+        iconSize: [0, 0],
+        iconAnchor: [0, 0],
         popupAnchor: [0, -32],
       });
 

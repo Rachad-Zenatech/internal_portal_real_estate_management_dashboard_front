@@ -239,4 +239,75 @@
   .animate-pop-in {
     animation: pop-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  /* Custom Leaflet Map Popup & Pin Styling */
+  .property-detail-pin,
+  .realtor-map-custom-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .property-detail-popup .leaflet-popup-content-wrapper {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-radius: 14px !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .property-detail-popup .leaflet-popup-content {
+    margin: 12px 14px !important;
+    line-height: 1.4 !important;
+  }
+  .property-detail-popup .leaflet-popup-tip {
+    background: #ffffff !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08) !important;
+  }
+  .property-detail-popup .leaflet-popup-close-button {
+    top: 8px !important;
+    right: 8px !important;
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 50% !important;
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    padding: 0 !important;
+    transition: all 0.15s ease !important;
+  }
+  .property-detail-popup .leaflet-popup-close-button:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+
+  .dark .property-detail-popup .leaflet-popup-content-wrapper {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  }
+  .dark .property-detail-popup .leaflet-popup-tip {
+    background: #0f172a !important;
+  }
+  .dark .property-detail-popup .leaflet-popup-close-button {
+    background: #1e293b !important;
+    color: #94a3b8 !important;
+  }
+  .dark .property-detail-popup .leaflet-popup-close-button:hover {
+    background: #334155 !important;
+    color: #ffffff !important;
+  }
+  .dark .property-detail-popup .property-popup-card div[style*="color: #0f172a"] {
+    color: #f8fafc !important;
+  }
+  .dark .property-detail-popup .property-popup-card div[style*="border-top: 1px solid #f1f5f9"] {
+    border-top-color: #334155 !important;
+  }
+  .dark .property-detail-popup .property-popup-card div[style*="background: #f8fafc"] {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #94a3b8 !important;
+  }
 }

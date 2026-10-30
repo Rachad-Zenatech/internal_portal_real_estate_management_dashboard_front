@@ -12,6 +12,10 @@ import {
   differenceInCalendarDays,
   parseISO,
   isValid,
+  addWeeks,
+  subWeeks,
+  addMonths,
+  subMonths,
 } from 'date-fns';
 import type { Stay, Unit } from '@/types/realEstate';
 import { exportToCsv, type ExportColumn } from '@/lib/exportUtils';
@@ -460,7 +464,6 @@ export default function StayCalendarView({
       {/* The Calendar / Timeline */}
       {viewLayout === 'timeline' ? (
         <UnitTimelineGrid
-          monthStart={monthStart}
           units={units.filter((u) => {
             if (selectedCity !== 'ALL' && u.city?.toLowerCase() !== selectedCity.toLowerCase()) {
               return false;
@@ -472,7 +475,6 @@ export default function StayCalendarView({
           })}
           bookings={scopedStays}
           todayStr={todayStr}
-          onMonthChange={setMonth}
           onOpenBookingModal={onOpenBookingModal}
           onSelectStay={setSelectedStayForDetail}
         />
@@ -859,17 +861,26 @@ const FollowUpCalendarGrid = memo(function FollowUpCalendarGrid({
               )}
 
               <div className="mt-1 space-y-1">
-                {entries.slice(0, MAX_PILLS).map(({ stay, status }) => (
-                  <div
-                    key={stay.id}
-                    title={`${stay.employee_name} (${stay.property_name || 'Condo'} #${stay.unit_number})`}
-                    className={`truncate rounded-sm border px-2 py-1 text-[11px] leading-tight ${
-                      outside ? 'border-border bg-muted text-muted-foreground' : STATUS_PILL[status]
-                    }`}
-                  >
-                    {stay.employee_name}
-                  </div>
-                ))}
+                {entries.slice(0, MAX_PILLS).map(({ stay, status }) => {
+                  const isCheckIn = key === stay.check_in_date;
+                  const isCheckOut = key === stay.check_out_date;
+                  return (
+                    <div
+                      key={stay.id}
+                      title={`${stay.employee_name} (${stay.property_name || 'Condo'} #${stay.unit_number}): ${stay.check_in_date} to ${stay.check_out_date}`}
+                      className={`truncate rounded-sm border px-1.5 py-0.5 text-[10px] leading-tight flex items-center gap-1 ${
+                        outside ? 'border-border bg-muted text-muted-foreground' : STATUS_PILL[status]
+                      } ${isCheckIn ? 'border-l-2 border-l-indigo-600 font-semibold' : ''}`}
+                    >
+                      {isCheckIn && <LogIn className="w-2.5 h-2.5 shrink-0 text-emerald-600 dark:text-emerald-400" />}
+                      {isCheckOut && <LogOut className="w-2.5 h-2.5 shrink-0 text-slate-500" />}
+                      {!isCheckIn && !isCheckOut && <span className="w-1 h-1 rounded-full bg-indigo-500 shrink-0" />}
+                      <span className="truncate">
+                        {isCheckIn ? `In: ${stay.employee_name?.split(' ')[0]}` : isCheckOut ? `Out: ${stay.employee_name?.split(' ')[0]}` : stay.employee_name?.split(' ')[0]}
+                      </span>
+                    </div>
+                  );
+                })}
                 {hidden > 0 && (
                   <div className="px-1 text-[11px] font-medium text-muted-foreground">+{hidden} more</div>
                 )}
@@ -882,74 +893,134 @@ const FollowUpCalendarGrid = memo(function FollowUpCalendarGrid({
   );
 });
 
-/** Memoized unit-row timeline component with units as rows and month days as columns */
+/** Memoized unit-row timeline component with units as rows and week/month days as columns (default: week) */
 const UnitTimelineGrid = memo(function UnitTimelineGrid({
-  monthStart,
   units,
   bookings,
   todayStr,
-  onMonthChange,
   onOpenBookingModal,
   onSelectStay,
 }: {
-  monthStart: Date;
   units: Unit[];
   bookings: Stay[];
   todayStr: string;
-  onMonthChange: (month: Date) => void;
   onOpenBookingModal: (prefill?: { unit_id?: string; check_in_date?: string }) => void;
   onSelectStay: (stay: Stay) => void;
 }) {
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(monthStart),
-    end: endOfMonth(monthStart),
-  });
+  const [timeframe, setTimeframe] = useState<'week' | 'month'>('week');
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+
+  const days = useMemo(() => {
+    if (timeframe === 'week') {
+      return eachDayOfInterval({
+        start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+        end: endOfWeek(currentDate, { weekStartsOn: 1 }),
+      });
+    } else {
+      return eachDayOfInterval({
+        start: startOfMonth(currentDate),
+        end: endOfMonth(currentDate),
+      });
+    }
+  }, [timeframe, currentDate]);
+
+  const handlePrev = () => {
+    if (timeframe === 'week') {
+      setCurrentDate((prev) => subWeeks(prev, 1));
+    } else {
+      setCurrentDate((prev) => subMonths(prev, 1));
+    }
+  };
+
+  const handleNext = () => {
+    if (timeframe === 'week') {
+      setCurrentDate((prev) => addWeeks(prev, 1));
+    } else {
+      setCurrentDate((prev) => addMonths(prev, 1));
+    }
+  };
+
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
 
   return (
     <div className="space-y-4">
-      {/* Month Navigation Header */}
-      <div className="flex items-end justify-between gap-4 border-b border-border pb-4">
+      {/* Navigation & Timeframe Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-            {format(monthStart, 'MMMM yyyy')} — Unit Availability Timeline
+          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+            {timeframe === 'week' ? (
+              <span>
+                {format(days[0], 'MMM d')} – {format(days[days.length - 1], 'MMM d, yyyy')} — Weekly Unit Timeline
+              </span>
+            ) : (
+              <span>
+                {format(currentDate, 'MMMM yyyy')} — Monthly Unit Timeline
+              </span>
+            )}
           </h2>
           <p className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {units.length} unit{units.length === 1 ? '' : 's'} across global portfolio
+            {units.length} unit{units.length === 1 ? '' : 's'} across global portfolio • {timeframe === 'week' ? '7 Days' : `${days.length} Days`} View
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 cursor-pointer"
-            onClick={() => {
-              const prev = new Date(monthStart);
-              prev.setMonth(prev.getMonth() - 1);
-              onMonthChange(startOfMonth(prev));
-            }}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs font-medium cursor-pointer"
-            onClick={() => onMonthChange(startOfMonth(new Date()))}
-          >
-            Today
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 cursor-pointer"
-            onClick={() => {
-              const next = new Date(monthStart);
-              next.setMonth(next.getMonth() + 1);
-              onMonthChange(startOfMonth(next));
-            }}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Timeframe Switcher (Default: Week, Switchable to Month) */}
+          <div className="flex items-center p-1 bg-muted/80 rounded-xl border border-border">
+            <button
+              type="button"
+              onClick={() => setTimeframe('week')}
+              className={`h-7 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                timeframe === 'week'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Week View
+            </button>
+            <button
+              type="button"
+              onClick={() => setTimeframe('month')}
+              className={`h-7 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                timeframe === 'month'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Month View
+            </button>
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 cursor-pointer"
+              onClick={handlePrev}
+              title={timeframe === 'week' ? 'Previous Week' : 'Previous Month'}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs font-medium cursor-pointer"
+              onClick={handleToday}
+            >
+              {timeframe === 'week' ? 'This Week' : 'This Month'}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 cursor-pointer"
+              onClick={handleNext}
+              title={timeframe === 'week' ? 'Next Week' : 'Next Month'}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -961,18 +1032,31 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
               <th className="py-2.5 px-3 min-w-[220px] sticky left-0 bg-muted/95 backdrop-blur z-20 border-r border-border text-left">
                 Unit & Property
               </th>
-              {daysInMonth.map((d) => {
+              {days.map((d) => {
                 const dStr = format(d, 'yyyy-MM-dd');
                 const isCurrent = dStr === todayStr;
                 return (
                   <th
                     key={dStr}
-                    className={`py-2 px-1 text-center min-w-[36px] font-mono border-r border-border/50 text-[11px] ${
-                      isCurrent ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold' : ''
-                    }`}
+                    className={`py-2 px-1 text-center border-r border-border/50 text-[11px] ${
+                      timeframe === 'week' ? 'min-w-[125px] sm:min-w-[140px]' : 'min-w-[36px] font-mono'
+                    } ${isCurrent ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold' : ''}`}
                   >
-                    <div>{format(d, 'EE')[0]}</div>
-                    <div className="text-[12px]">{format(d, 'd')}</div>
+                    {timeframe === 'week' ? (
+                      <div>
+                        <div className="text-[10px] uppercase font-semibold text-muted-foreground">
+                          {format(d, 'EEEE')}
+                        </div>
+                        <div className="text-xs font-bold text-foreground mt-0.5">
+                          {format(d, 'MMM d')}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div>{format(d, 'EE')[0]}</div>
+                        <div className="text-[12px]">{format(d, 'd')}</div>
+                      </div>
+                    )}
                   </th>
                 );
               })}
@@ -981,7 +1065,7 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
           <tbody className="divide-y divide-border/60">
             {units.length === 0 ? (
               <tr>
-                <td colSpan={daysInMonth.length + 1} className="py-8 text-center text-muted-foreground">
+                <td colSpan={days.length + 1} className="py-8 text-center text-muted-foreground">
                   No units matching selected filters.
                 </td>
               </tr>
@@ -990,7 +1074,7 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
                 const unitBookings = bookings.filter((b) => b.unit_id === u.id && b.status !== 'CANCELLED');
                 return (
                   <tr key={u.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="py-2 px-3 sticky left-0 bg-card z-10 border-r border-border text-left shadow-xs">
+                    <td className="py-2.5 px-3 sticky left-0 bg-card z-10 border-r border-border text-left shadow-xs">
                       <div className="font-bold text-xs text-foreground truncate max-w-[200px]">
                         Unit #{u.unit_number}
                       </div>
@@ -998,10 +1082,10 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
                         {u.property_name || 'Property'} • {u.city}
                       </div>
                       <div className="text-[10px] text-muted-foreground/80 mt-0.5">
-                        {u.bedrooms} Bed • Cap {u.guest_capacity}
+                        {u.bedrooms} Bed • Cap {u.guest_capacity || u.max_occupants || 2}
                       </div>
                     </td>
-                    {daysInMonth.map((d) => {
+                    {days.map((d) => {
                       const dStr = format(d, 'yyyy-MM-dd');
                       // Checkout is exclusive: stays cover days check_in <= d < check_out
                       const stay = unitBookings.find(
@@ -1009,15 +1093,39 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
                       );
                       const isCurrent = dStr === todayStr;
                       if (stay) {
+                        const isCheckIn = dStr === stay.check_in_date;
+                        const nextDayStr = format(new Date(d.getTime() + 86400000), 'yyyy-MM-dd');
+                        const isLastNight = nextDayStr === stay.check_out_date;
+                        const isSingleNight = isCheckIn && isLastNight;
                         return (
                           <td
                             key={dStr}
                             onClick={() => onSelectStay(stay)}
                             className="p-0.5 border-r border-border/40 text-center cursor-pointer"
-                            title={`${stay.employee_name} (${stay.check_in_date} to ${stay.check_out_date})`}
+                            title={`${stay.employee_name} (${stay.check_in_date} to ${stay.check_out_date}) • ${stay.purpose_of_stay || 'Business Trip'}`}
                           >
-                            <div className="h-8 w-full rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 border border-indigo-500/40 flex items-center justify-center text-[10px] font-semibold truncate px-1">
-                              {stay.employee_name?.split(' ')[0] || 'Stay'}
+                            <div
+                              className={`h-9 w-full flex flex-col justify-center text-[10px] font-semibold truncate transition-all ${
+                                isSingleNight
+                                  ? 'rounded-md bg-indigo-600 text-white shadow-xs mx-0.5 px-2'
+                                  : isCheckIn
+                                  ? 'rounded-l-md bg-indigo-600 text-white shadow-xs ml-0.5 pl-2 pr-1'
+                                  : isLastNight
+                                  ? 'rounded-r-md bg-indigo-600/90 text-white mr-0.5 pr-2 pl-1'
+                                  : 'rounded-none bg-indigo-600/85 text-white px-1'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1 truncate">
+                                {isCheckIn && <LogIn className="w-2.5 h-2.5 shrink-0 text-indigo-200" />}
+                                <span className="truncate">
+                                  {timeframe === 'week' ? stay.employee_name : (stay.employee_name?.split(' ')[0] || 'Stay')}
+                                </span>
+                              </div>
+                              {timeframe === 'week' && stay.purpose_of_stay && (
+                                <div className="text-[9px] opacity-80 font-normal truncate">
+                                  {stay.purpose_of_stay}
+                                </div>
+                              )}
                             </div>
                           </td>
                         );
@@ -1029,9 +1137,9 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
                           className={`p-0.5 border-r border-border/40 text-center cursor-pointer group hover:bg-emerald-500/10 ${
                             isCurrent ? 'bg-indigo-500/5' : ''
                           }`}
-                          title={`Click to book Unit #${u.unit_number} starting ${dStr}`}
+                          title={`Click to book Unit #${u.unit_number} on ${dStr}`}
                         >
-                          <div className="h-8 w-full rounded flex items-center justify-center text-transparent group-hover:text-emerald-600 transition-colors text-xs font-bold">
+                          <div className="h-9 w-full rounded flex items-center justify-center text-transparent group-hover:text-emerald-600 transition-colors text-xs font-bold">
                             +
                           </div>
                         </td>
