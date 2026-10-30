@@ -85,31 +85,43 @@ flowchart TD
 
 ---
 
-## Directory Structure
+<!-- project-structure:start -->
+## Project Structure
 
 ```text
-internal_portal_real_estate_management_dashboard_front/
-├── public/                 # Static assets, branding, and icons
-├── src/
-│   ├── components/         # Shared UI components
-│   │   ├── AppShell/       # Sidebar, TopBar, Breadcrumbs, Notifications
-│   │   ├── Configurations/ # RBAC permission modals and dialogs
-│   │   └── ui/             # shadcn/ui primitive library
-│   ├── hooks/              # Custom hooks (useSSE, useAuth, useAuditLogs)
-│   ├── lib/                # AuthContext and helper utilities
-│   ├── pages/
-│   │   ├── Configurations/ # Users, Roles, and Permission matrices
-│   │   ├── Log/            # Audit logs page
-│   │   ├── Logs/           # System logs console
-│   │   ├── Dashboard.tsx   # Portal overview
-│   │   └── Login.tsx       # Microsoft SSO login
-│   ├── services/           # apiClient, queryKeys, error reporting
-│   ├── types/              # Domain TypeScript types
-│   ├── App.tsx             # Application router
-│   └── main.tsx            # Entry point
-├── package.json
-└── vite.config.ts          # Vite configuration pinned to port 5177
+src/
+  assets/                   # Images and icons
+  components/               # Reusable UI, one folder per feature
+    AppShell/               # Layout chrome: sidebar, top bar, navigation, notifications
+    RealEstate/             # Real-estate widgets (realtor location map explorer)
+    common/                 # Shared by several pages: error boundary, loading screen, route guards
+    native/                 # Mobile-only components
+    ui/                     # shadcn/ui primitives (button, dialog, ...); don't put feature code here
+  data/                     # Static data / catalogs
+  hooks/                    # Custom React hooks
+  lib/                      # App-wide helpers: auth context, env, storage, utils
+  pages/                    # One folder per feature/route group
+    Auth/                   # Login and pending-access screens
+    Configurations/         # Users, roles and permission settings
+    Dashboard/              # Home dashboard
+    Logs/                   # Audit and system logs
+    RealEstate/             # Properties, portfolio (list and map), bookings, stay calendar, payments, document and spreadsheet import
+  services/                 # API calls: apiClient + one <feature>Service.ts per backend area
+  types/                    # TypeScript types, one file per feature
+  utils/                    # Pure helper functions
+  App.native.tsx            # Mobile (Expo) entry and navigation
+  App.tsx                   # Web routes (lazy-loaded pages)
+  main.tsx                  # Web entry: providers and router
 ```
+
+### Where new code goes
+
+* **New page:** `src/pages/<Feature>/`. Pages that belong together share a folder; a `.native.tsx` variant sits next to its web file.
+* **Components:** used by one feature go in `src/components/<Feature>/`; used by several go in `src/components/common/`. `src/components/ui/` is only for shadcn primitives.
+* **New API calls** go in `src/services/<feature>Service.ts` through `apiClient`, not `fetch` inside components (some older pages still do this; move those calls when you touch them). Types go in `src/types/<feature>.ts`.
+* **Don't add loose files** to `src/pages/` or `src/components/`.
+* **When you move a file,** update every import to it (and the imports inside it), then run `npm run build` (`tsc -b && vite build`).
+<!-- project-structure:end -->
 
 ---
 
