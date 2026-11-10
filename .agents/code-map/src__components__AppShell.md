@@ -17,7 +17,7 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
 - `IntegrationStatusResponse` (export interface) L34
 - `ConnectionStatusLight` (export function) L39
 
-## src/components/AppShell/MessageHubStatusDropdown.tsx (572 lines) - message hub status dropdown (components  app shell)
+## src/components/AppShell/MessageHubStatusDropdown.tsx (571 lines) - message hub status dropdown (components  app shell)
 - `HubQueueOrStreamItem` (export interface) L26
 - `HubChannelGroupStatus` (export interface) L35
 - `HubConnectedServer` (export interface) L44

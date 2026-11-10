@@ -12,7 +12,7 @@ For function and route definitions with their line numbers, grep `.agents/code-m
 - src/components/AppShell/AppShell.tsx (51 lines) - Set initial state
 - src/components/AppShell/Breadcrumbs.tsx (141 lines) - breadcrumbs (components  app shell)
 - src/components/AppShell/ConnectionStatusLight.tsx (256 lines) - connection status light (components  app shell)
-- src/components/AppShell/MessageHubStatusDropdown.tsx (572 lines) - message hub status dropdown (components  app shell)
+- src/components/AppShell/MessageHubStatusDropdown.tsx (571 lines) - message hub status dropdown (components  app shell)
 - src/components/AppShell/Navigation.tsx (68 lines) - navigation (components  app shell)
 - src/components/AppShell/NotificationDropdown.tsx (187 lines) - notification dropdown (components  app shell)
 - src/components/AppShell/Sidebar.tsx (298 lines) - sidebar (components  app shell)
