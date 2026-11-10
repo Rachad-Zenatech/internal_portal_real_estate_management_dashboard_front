@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { PageHeader, surfaceClass } from "@/components/common/PageKit";
 import HelpIcon from "@/components/ui/HelpIcon";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
@@ -416,24 +417,21 @@ export default function Users() {
   const selectedRowCount = table.getSelectedRowModel().rows.length;
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2"><h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">Users</h2><HelpIcon text="Manage portal user accounts. Create, search, update details, lock/unlock accounts, and delete users." /></div>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">Manage system users and their access.</p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          {hasPermission("CONFIG_USERS_CREATE") && (
-            <Button onClick={openCreateDialog} className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" /> Add User
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="w-full space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title={<span className="flex items-center gap-2">Users<HelpIcon text="Manage portal user accounts. Create, search, update details, lock/unlock accounts, and delete users." /></span>}
+        description="Manage system users and their access."
+        actions={hasPermission("CONFIG_USERS_CREATE") && (
+          <Button onClick={openCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" /> Add User
+          </Button>
+        )}
+      />
 
       {/* BULK ACTION BAR */}
       {selectedRowCount > 0 && (
-        <div className="flex items-center justify-between p-3 px-4 bg-blue-50/70 dark:bg-zinc-800/80 border border-blue-200 dark:border-zinc-700 rounded-lg animate-in fade-in slide-in-from-top-2 shadow-sm">
+        <div className="flex items-center justify-between p-3 px-4 bg-primary/5 border border-primary/20 rounded-xl animate-in fade-in slide-in-from-top-2 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-zinc-300">
             <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-600 text-white">
               {selectedRowCount}
@@ -500,7 +498,7 @@ export default function Users() {
           </DropdownMenu>
         </div>
 
-        <Card className="flex-1 min-h-0 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm flex flex-col p-0">
+        <Card className={`${surfaceClass} flex-1 min-h-0 overflow-hidden flex flex-col p-0`}>
           <Table className="m-0 relative" containerClassName="w-full overflow-x-auto">
             <TableHeader >
               {table.getHeaderGroups().map((headerGroup) => (

@@ -1,12 +1,12 @@
 import { ConnectionStatusLight } from "./ConnectionStatusLight";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Bell, Menu, LogOut, User as UserIcon, BellRing, Settings2, Laptop, Loader2, CheckCircle2, X } from "lucide-react";
+import { Bell, Menu, LogOut, User as UserIcon, BellRing, Settings2, Laptop } from "lucide-react";
+import { MessageHubStatusDropdown } from "./MessageHubStatusDropdown";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,18 +25,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient, BASE_URL } from "@/services/apiClient";
 import ThemeSwitch from "./ThemeSwitch";
 import { useAuth, type Role } from "@/lib/AuthContext";
 import { resolveUserDepartment } from "@/lib/userDepartment";
 import { useUnreadNotificationCount } from "@/hooks/useNotifications";
 import { NotificationDropdownContent } from "./NotificationDropdown";
-import { realEstateService } from "@/services/realEstateService";
-import type { PropertyExtractionJob } from "@/types/realEstate";
-import AddPropertyDocumentModal from "@/pages/RealEstate/AddPropertyDocumentModal";
 
-const EXTRACTION_TOAST_ID = "document-extraction-progress";
 
 function TopBarClock() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -201,46 +197,7 @@ export default function TopBar({ onToggleSidebar }: { onToggleSidebar?: () => vo
   const { data: unreadCountData } = useUnreadNotificationCount();
   const unreadCount = unreadCountData?.count ?? 0;
 
-  const [previewJobs, setPreviewJobs] = useState<PropertyExtractionJob[] | null>(null);
-  const [activeFocusJobId, setActiveFocusJobId] = useState<string | null>(null);
-
-  // Background extraction jobs polling for topbar indicator
-  const { data: extractionJobs = [] } = useQuery<PropertyExtractionJob[]>({
-    queryKey: ["property-extraction-jobs"],
-    queryFn: () => realEstateService.getPropertyExtractionJobs(),
-    refetchInterval: (query) => {
-      const jobs = (query.state.data as PropertyExtractionJob[]) || [];
-      const hasActive = jobs.some(
-        (j) => j.status === "PROCESSING" || j.status === "UPLOADED"
-      );
-      return hasActive ? 1500 : 8000;
-    },
-  });
-
-  const activeExtractionJob = extractionJobs.find(
-    (j) => j.status === "PROCESSING" || j.status === "UPLOADED"
-  );
-
-  const readyExtractionJobs = useMemo(
-    () => extractionJobs.filter((j) => j.status === "NEEDS_REVIEW"),
-    [extractionJobs]
-  );
-
   const queryClient = useQueryClient();
-  const extractionJobsRef = useRef<Map<string, { pct: number; stage: string }>>(new Map());
-
-  const clearExtractionJobsMutation = useMutation({
-    mutationFn: () => realEstateService.clearAllExtractionJobs(),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["property-extraction-jobs"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
-      toast.success(`Cleared ${data?.cleared_count || 0} extraction preview(s)`);
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.detail || "Failed to clear preview notifications");
-    },
-  });
 
   useEffect(() => {
     // Connect to SSE stream
@@ -264,55 +221,6 @@ export default function TopBar({ onToggleSidebar }: { onToggleSidebar?: () => vo
 
         if (!isTargetUser) {
           return;
-        }
-
-        // Extraction progress: a single card for all running jobs showing their combined
-        // progress; it is removed once every job has finished.
-        const isExtractionEvent = newNotif.entity_type === "PropertyExtractionJob" && !!newNotif.entity_id;
-
-        if (isExtractionEvent) {
-          const jobs = extractionJobsRef.current;
-          const info = newNotif.attachments?.[0] || {};
-          // The backend's final event is also an EXTRACTION_PROGRESS, with status NEEDS_REVIEW / FAILED.
-          const isRunning = newNotif.type === "EXTRACTION_PROGRESS" && (!info.status || info.status === "PROCESSING");
-          if (isRunning) {
-            jobs.set(String(newNotif.entity_id), {
-              pct: Math.max(0, Math.min(100, Number(info.progress) || 0)),
-              stage: info.stage || newNotif.message,
-            });
-          } else {
-            jobs.delete(String(newNotif.entity_id));
-          }
-
-          if (jobs.size === 0) {
-            toast.dismiss(EXTRACTION_TOAST_ID);
-          } else {
-            const list = Array.from(jobs.values());
-            const pct = Math.round(list.reduce((sum, j) => sum + j.pct, 0) / list.length);
-            const stage = list.length > 1 ? `${list.length} documents in progress` : list[0].stage;
-            toast(
-              <div className="w-full flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 font-medium">
-                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    <span>Document extraction</span>
-                  </div>
-                  <span className="text-xs font-semibold tabular-nums text-muted-foreground">{pct}%</span>
-                </div>
-                <Progress value={pct} className="h-1.5" />
-                <div className="text-xs text-muted-foreground">{stage}</div>
-              </div>,
-              {
-                id: EXTRACTION_TOAST_ID,
-                position: "bottom-right",
-                duration: Infinity,
-                dismissible: false,
-              }
-            );
-          }
-
-          // Final progress events only close the job; completion/failure has its own persistent notification.
-          if (newNotif.type === "EXTRACTION_PROGRESS") return;
         }
 
         const capitalizedTitle = newNotif.title ? newNotif.title.charAt(0).toUpperCase() + newNotif.title.slice(1) : "System Notification";
@@ -373,6 +281,7 @@ export default function TopBar({ onToggleSidebar }: { onToggleSidebar?: () => vo
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-3.5 md:gap-4.5 shrink-0">
+        <MessageHubStatusDropdown />
         <ConnectionStatusLight />
         <TopBarClock />
         <TooltipProvider delayDuration={0}>
@@ -386,39 +295,6 @@ export default function TopBar({ onToggleSidebar }: { onToggleSidebar?: () => vo
           </Tooltip>
         </TooltipProvider>
 
-        {activeExtractionJob && (
-          <div
-            onClick={() => setIsNotificationsOpen(true)}
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold cursor-pointer animate-pulse hover:bg-indigo-500/25 transition-colors"
-            title={`Extracting ${activeExtractionJob.file_name} (${activeExtractionJob.progress || 25}%) - Click to view in notifications`}
-          >
-            <Loader2 className="w-3 h-3 animate-spin text-indigo-600 dark:text-indigo-400" />
-            <span>AI Extracting ({activeExtractionJob.progress || 25}%)</span>
-          </div>
-        )}
-
-        {readyExtractionJobs.length > 0 && !activeExtractionJob && (
-          <div
-            onClick={() => setPreviewJobs(readyExtractionJobs)}
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold cursor-pointer hover:bg-emerald-500/25 transition-colors group"
-            title={`${readyExtractionJobs.length} extracted document(s) ready for review - Click to preview consolidated properties`}
-          >
-            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-            <span>{readyExtractionJobs.length} Ready to Preview</span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                clearExtractionJobsMutation.mutate();
-              }}
-              title="Clear all preview notifications"
-              className="ml-1 p-0.5 rounded-full hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-300 transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
         <div className="hidden sm:flex items-center gap-1.5 border-r pr-2 sm:pr-4 md:pr-5 mr-1">
           <DropdownMenu open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
             <DropdownMenuTrigger asChild>
@@ -427,19 +303,11 @@ export default function TopBar({ onToggleSidebar }: { onToggleSidebar?: () => vo
                 {unreadCount > 0 && (
                   <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-card" />
                 )}
-                {activeExtractionJob && (
-                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-indigo-600 ring-2 ring-card animate-ping" />
-                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[500px] max-w-[calc(100vw-1.5rem)] p-0 rounded-2xl overflow-hidden bg-card shadow-2xl border border-border">
               <NotificationDropdownContent
                 onClose={() => setIsNotificationsOpen(false)}
-                onOpenPreview={(job, allJobs) => {
-                  const jobs = allJobs && allJobs.length > 0 ? allJobs : [job];
-                  setPreviewJobs(jobs);
-                  setActiveFocusJobId(job.id);
-                }}
               />
             </DropdownMenuContent>
           </DropdownMenu>
@@ -671,26 +539,6 @@ export default function TopBar({ onToggleSidebar }: { onToggleSidebar?: () => vo
         </DialogContent>
       </Dialog>
 
-      {/* Global Document Review Preview Modal - Previous Consolidated Multi-Document Preview */}
-      {previewJobs && previewJobs.length > 0 && (
-        <AddPropertyDocumentModal
-          isOpen={!!previewJobs}
-          initialJobs={previewJobs}
-          initialRecordId={activeFocusJobId || undefined}
-          onClose={() => {
-            setPreviewJobs(null);
-            setActiveFocusJobId(null);
-          }}
-          onPropertyCreated={() => {
-            setPreviewJobs(null);
-            setActiveFocusJobId(null);
-            queryClient.invalidateQueries({ queryKey: ["property-extraction-jobs"] });
-            queryClient.invalidateQueries({ queryKey: ["real-estate-properties"] });
-            queryClient.invalidateQueries({ queryKey: ["real-estate-summary"] });
-            toast.success("Property saved successfully from extraction!");
-          }}
-        />
-      )}
     </header>
   );
 }

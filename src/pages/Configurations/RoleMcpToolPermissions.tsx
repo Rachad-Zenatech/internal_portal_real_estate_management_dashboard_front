@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageHeader, surfaceClass } from "@/components/common/PageKit";
 import HelpIcon from "@/components/ui/HelpIcon";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
@@ -145,13 +146,19 @@ export default function RoleMcpToolPermissions() {
   const selectedRole = roles?.find(r => r.id === selectedRoleId);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out p-6 w-full">
-      
+    <div className="w-full flex-1 min-h-0 flex flex-col gap-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title={<span className="flex items-center gap-2">Role MCP Tool Permissions<HelpIcon text="Define which MCP tools are accessible by each role to restrict AI code actions." /></span>}
+        description={selectedRole ? `Configuring MCP tools for ${selectedRole.name}` : "Select a role from the list to begin."}
+      />
+
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
       {/* Left Panel: Roles List */}
-      <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 lg:border-r border-slate-200 dark:border-zinc-800 lg:pr-6 pb-6 lg:pb-0 border-b lg:border-b-0 min-h-0">
+      <div className={`${surfaceClass} w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 p-4 min-h-0`}>
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">Roles</h2>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">Select a role to configure AI tool access.</p>
+          <h2 className="text-sm font-semibold">Roles</h2>
+          <p className="text-xs text-muted-foreground">Select a role to configure access.</p>
         </div>
         
         <div className="relative">
@@ -194,16 +201,9 @@ export default function RoleMcpToolPermissions() {
       </div>
 
       {/* Right Panel: Permissions Configuration */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <div>
-          <div className="flex items-center gap-2"><h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">Role MCP Tool Permissions</h2><HelpIcon text="Define which MCP tools are accessible by each role to restrict AI code actions." /></div>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">
-             {selectedRole ? `Configuring MCP tools for ${selectedRole.name}` : "Select a role from the list to begin."}
-          </p>
-        </div>
-
+      <div className={`${surfaceClass} flex-1 flex flex-col min-h-0 p-5`}>
         {selectedRoleId ? (
-          <div className="flex-1 min-h-0 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 w-full mt-6">
+          <div className="flex-1 min-h-0 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-zinc-400" />
@@ -221,7 +221,7 @@ export default function RoleMcpToolPermissions() {
               )}
             </div>
             
-            <div className={`flex-1 min-h-0 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden flex flex-col transition-opacity duration-200 ${loadingRolePermissions || saveMutation.isPending ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            <div className={`flex-1 min-h-0 rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden flex flex-col transition-opacity duration-200 ${loadingRolePermissions || saveMutation.isPending ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
               <div className="flex-1 overflow-y-auto relative">
                 <Table>
                   <TableHeader className="bg-slate-50/80 dark:bg-zinc-950/90 ">
@@ -289,7 +289,7 @@ export default function RoleMcpToolPermissions() {
             )}
           </div>
         ) : (
-          <div className="flex-1 min-h-0 flex items-center justify-center mt-6">
+          <div className="flex-1 min-h-0 flex items-center justify-center">
              <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl bg-slate-50 dark:bg-zinc-900/20 text-center max-w-md mx-auto">
                <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
                  <Check className="h-8 w-8 text-slate-300 dark:text-zinc-600" />
@@ -299,6 +299,7 @@ export default function RoleMcpToolPermissions() {
              </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

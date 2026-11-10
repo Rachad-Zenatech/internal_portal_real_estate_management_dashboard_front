@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { PageHeader, surfaceClass } from "@/components/common/PageKit";
 import HelpIcon from "@/components/ui/HelpIcon";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
@@ -442,19 +443,18 @@ export default function Roles() {
   const hasPendingMoves = Object.keys(pendingMoves).length > 0;
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2"><h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">Roles</h2><HelpIcon text="Manage application roles and set default roles assigned to new users." /></div>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">Manage organizational role hierarchy and security groups.</p>
-        </div>
-      </div>
+    <div className="w-full flex-1 min-h-0 flex flex-col gap-6 pb-12 h-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title={<span className="flex items-center gap-2">Roles<HelpIcon text="Manage application roles and set default roles assigned to new users." /></span>}
+        description="Manage organizational role hierarchy and security groups."
+      />
 
       <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-6">
         {/* Left Panel: Tree */}
-        <div className="w-full md:w-1/3 flex flex-col rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm h-full">
-          <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-950/50">
-            <h3 className="font-semibold text-slate-800 dark:text-zinc-200">Role Hierarchy</h3>
+        <div className={`${surfaceClass} w-full md:w-1/3 flex flex-col overflow-hidden h-full`}>
+          <div className="p-4 border-b border-border/60 flex justify-between items-center bg-muted/30">
+            <h3 className="font-semibold">Role Hierarchy</h3>
             <div className="flex items-center gap-2">
               {hasPendingMoves && (
                 <div className="flex gap-2 mr-2">
@@ -538,7 +538,7 @@ export default function Roles() {
         </div>
 
         {/* Right Panel: Details / Editor */}
-        <div className="w-full md:w-2/3 flex flex-col rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm h-full">
+        <div className={`${surfaceClass} w-full md:w-2/3 flex flex-col overflow-hidden h-full`}>
           {!selectedRole ? (
             <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-zinc-500 p-8 text-center flex-col">
               <Shield className="w-12 h-12 mb-4 opacity-20" />
@@ -547,7 +547,7 @@ export default function Roles() {
             </div>
           ) : (
             <div className="flex flex-col h-full overflow-hidden">
-              <div className="p-6 border-b border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div className="p-6 border-b border-border/60 bg-muted/30 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">

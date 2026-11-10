@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageHeader, surfaceClass } from "@/components/common/PageKit";
 import HelpIcon from "@/components/ui/HelpIcon";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
@@ -162,12 +163,54 @@ export default function RoleGroupPermissions() {
   const totalGroupsCount = allAvailableGroupIds.length;
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out p-6 w-full">
+    <div className="w-full flex-1 min-h-0 flex flex-col gap-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title={<span className="flex items-center gap-2"><HelpIcon text="Manage permissions groups and actions associated with roles." />Simplified Permissions <ShieldCheck className="h-5 w-5 text-primary" /></span>}
+        description={selectedRole
+          ? `Configuring access groups for "${selectedRole.name}" (${totalSelectedCount} of ${totalGroupsCount} permissions granted)`
+          : "Select a role from the list to begin."}
+        actions={roleId && hasPermission("CONFIG_ROLES_UPDATE") && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAllGlobal}
+                className="text-xs h-9 bg-background/70 backdrop-blur"
+              >
+                <CheckCheck className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                Select All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDeselectAllGlobal}
+                className="text-xs h-9 bg-background/70 backdrop-blur"
+              >
+                <Square className="mr-1.5 h-3.5 w-3.5 text-slate-500" />
+                Clear All
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={updateMutation.isPending || isLoadingAssigned}
+                className="min-w-[120px] h-9"
+              >
+                {updateMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Save Changes
+              </Button>
+            </>
+          )}
+      />
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
       {/* Left Panel: Roles List */}
-      <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 lg:border-r border-slate-200 dark:border-zinc-800 lg:pr-6 pb-6 lg:pb-0 border-b lg:border-b-0 min-h-0">
+      <div className={`${surfaceClass} w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 p-4 min-h-0`}>
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">Roles</h2>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">Select a role to configure permissions.</p>
+          <h2 className="text-sm font-semibold">Roles</h2>
+          <p className="text-xs text-muted-foreground">Select a role to configure permissions.</p>
         </div>
 
         <div className="relative">
@@ -218,54 +261,6 @@ export default function RoleGroupPermissions() {
 
       {/* Right Panel: Permissions Configuration */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-              <HelpIcon text="Manage permissions groups and actions associated with roles." />
-              Simplified Permissions <ShieldCheck className="h-5 w-5 text-blue-500" />
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
-              {selectedRole
-                ? `Configuring access groups for "${selectedRole.name}" (${totalSelectedCount} of ${totalGroupsCount} permissions granted)`
-                : "Select a role from the list to begin."}
-            </p>
-          </div>
-          {roleId && hasPermission("CONFIG_ROLES_UPDATE") && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAllGlobal}
-                className="text-xs h-9"
-              >
-                <CheckCheck className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
-                Select All
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDeselectAllGlobal}
-                className="text-xs h-9"
-              >
-                <Square className="mr-1.5 h-3.5 w-3.5 text-slate-500" />
-                Clear All
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={updateMutation.isPending || isLoadingAssigned}
-                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px] h-9"
-              >
-                {updateMutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Save Changes
-              </Button>
-            </div>
-          )}
-        </div>
-
         {/* Permission Search Filter */}
         {roleId && (
           <div className="mb-4 relative">
@@ -281,7 +276,7 @@ export default function RoleGroupPermissions() {
 
         {roleId ? (
           <div
-            className={`flex-1 min-h-0 overflow-y-auto rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm p-6 transition-opacity ${
+            className={`flex-1 min-h-0 overflow-y-auto rounded-2xl border border-border/60 bg-card shadow-sm p-6 transition-opacity ${
               isLoadingAssigned || updateMutation.isPending ? "opacity-50 pointer-events-none" : ""
             }`}
           >
@@ -481,6 +476,7 @@ export default function RoleGroupPermissions() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

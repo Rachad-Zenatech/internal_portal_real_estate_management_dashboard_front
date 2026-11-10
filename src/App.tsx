@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "./lib/AuthContext";
+import { ResearchTasksProvider } from "./lib/ResearchTasksContext";
+import ResearchProgressPanel from "./components/RealEstate/ResearchProgressPanel";
 import { ShieldAlert, ArrowLeft } from "lucide-react";
 import { Button } from "./components/ui/button";
 
@@ -8,10 +10,8 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 
 const AppShell = lazy(() => import("./components/AppShell/AppShell"));
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
-const PortfolioPage = lazy(() => import("./pages/RealEstate/PortfolioPage"));
 const PropertiesPage = lazy(() => import("./pages/RealEstate/PropertiesPage"));
 const BookingsPage = lazy(() => import("./pages/RealEstate/BookingsPage"));
-const PaymentsPage = lazy(() => import("./pages/RealEstate/PaymentsPage"));
 
 const Users = lazy(() => import("./pages/Configurations/Users"));
 const Roles = lazy(() => import("./pages/Configurations/Roles"));
@@ -46,6 +46,7 @@ function NotFoundAlert() {
 function App() {
   return (
     <AuthProvider>
+      <ResearchTasksProvider>
       <BrowserRouter>
         <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading...</div>}>
           <Routes>
@@ -73,15 +74,7 @@ function App() {
               />
 
               {/* Real Estate Domain Routes */}
-              <Route path="/real-estate" element={<Navigate to="/real-estate/portfolio" replace />} />
-              <Route
-                path="/real-estate/portfolio"
-                element={
-                  <ProtectedRoute navigationCode="REAL_ESTATE_PORTFOLIO">
-                    <PortfolioPage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/real-estate" element={<Navigate to="/real-estate/properties" replace />} />
               <Route
                 path="/real-estate/properties"
                 element={
@@ -111,22 +104,6 @@ function App() {
                 element={
                   <ProtectedRoute navigationCode="REAL_ESTATE_BOOKINGS">
                     <BookingsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/real-estate/accounting"
-                element={
-                  <ProtectedRoute navigationCode="REAL_ESTATE_PAYMENTS">
-                    <PaymentsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/real-estate/payments"
-                element={
-                  <ProtectedRoute navigationCode="REAL_ESTATE_PAYMENTS">
-                    <PaymentsPage />
                   </ProtectedRoute>
                 }
               />
@@ -275,7 +252,9 @@ function App() {
             </Route>
           </Routes>
         </Suspense>
+        <ResearchProgressPanel />
       </BrowserRouter>
+      </ResearchTasksProvider>
     </AuthProvider>
   );
 }

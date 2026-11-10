@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { PageHeader, surfaceClass } from "@/components/common/PageKit";
 import HelpIcon from "@/components/ui/HelpIcon";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
@@ -274,15 +275,12 @@ export default function AuditLog() {
   });
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col w-full animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out pb-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            Audit & Security Logs<HelpIcon text="Displays a detailed timeline of administrative actions, config edits, and security events for compliance." />
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Track system activity, configuration changes, and login attempts.</p>
-        </div>
-      </div>
+    <div className="flex-1 min-h-0 flex flex-col w-full gap-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title={<span className="flex items-center gap-2">Audit & Security Logs<HelpIcon text="Displays a detailed timeline of administrative actions, config edits, and security events for compliance." /></span>}
+        description="Track system activity, configuration changes, and login attempts."
+      />
 
       <Tabs defaultValue="actions" className="flex-1 flex flex-col min-h-0">
         <TabsList className="grid w-[400px] grid-cols-2 mb-4" variant="line">
@@ -300,7 +298,7 @@ export default function AuditLog() {
                   placeholder="Search actions..." 
                   value={auditGlobalFilter}
                   onChange={(e) => setAuditGlobalFilter(e.target.value)}
-                  className="pl-10 w-[280px] bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 rounded-xl"
+                  className="pl-10 w-[280px] bg-card border-border rounded-xl"
                 />
               </div>
               <DropdownMenu>
@@ -329,7 +327,7 @@ export default function AuditLog() {
               </DropdownMenu>
             </div>
             
-            <Card className="flex-1 min-h-0 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm flex flex-col p-0">
+            <Card className={`${surfaceClass} flex-1 min-h-0 overflow-hidden flex flex-col p-0`}>
               <Table className="m-0 relative" containerClassName="w-full overflow-x-auto">
                 <TableHeader >
                   {auditTable.getHeaderGroups().map((headerGroup) => (
@@ -377,7 +375,7 @@ export default function AuditLog() {
             </Card>
 
             {/* PAGINATION FOR ACTIONS */}
-            <div className="border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-3">
+            <div className="border-t border-border/60 bg-card py-3">
               <DataTablePagination table={auditTable} noun="action(s)" />
             </div>
           </div>
@@ -393,7 +391,7 @@ export default function AuditLog() {
                   placeholder="Search activities..." 
                   value={loginGlobalFilter}
                   onChange={(e) => setLoginGlobalFilter(e.target.value)}
-                  className="pl-10 w-[280px] bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 rounded-xl"
+                  className="pl-10 w-[280px] bg-card border-border rounded-xl"
                 />
               </div>
               <DropdownMenu>
@@ -422,7 +420,7 @@ export default function AuditLog() {
               </DropdownMenu>
             </div>
             
-            <Card className="flex-1 min-h-0 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm flex flex-col p-0">
+            <Card className={`${surfaceClass} flex-1 min-h-0 overflow-hidden flex flex-col p-0`}>
               <Table className="m-0 relative" containerClassName="w-full overflow-x-auto">
                 <TableHeader >
                   {loginTable.getHeaderGroups().map((headerGroup) => (
@@ -470,7 +468,7 @@ export default function AuditLog() {
             </Card>
 
             {/* PAGINATION FOR LOGINS */}
-            <div className="border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-3">
+            <div className="border-t border-border/60 bg-card py-3">
               <DataTablePagination table={loginTable} noun="activity(ies)" />
             </div>
           </div>

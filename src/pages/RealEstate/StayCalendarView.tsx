@@ -17,7 +17,8 @@ import {
   addMonths,
   subMonths,
 } from 'date-fns';
-import type { Stay, Unit } from '@/types/realEstate';
+import { formatUnitLabel } from '@/types/bookings';
+import type { Stay, Unit } from '@/types/bookings';
 import { exportToCsv, type ExportColumn } from '@/lib/exportUtils';
 import {
   ChevronLeft,
@@ -57,6 +58,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { surfaceClass } from '@/components/common/PageKit';
 
 export type StayStatusBucket = 'checkedIn' | 'arrivingSoon' | 'upcoming';
 
@@ -113,7 +115,7 @@ export default function StayCalendarView({
 }: StayCalendarProps) {
   const [search, setSearch] = useState('');
   const [selectedUnitId, setSelectedUnitId] = useState<string>('ALL');
-  const [viewLayout, setViewLayout] = useState<'timeline' | 'calendar'>('timeline');
+  const [viewLayout, setViewLayout] = useState<'timeline' | 'calendar'>('calendar');
   const [statusFilter, setStatusFilter] = useState<StayStatusBucket | null>(null);
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [dayInPopup, setDayInPopup] = useState<Date | null>(null);
@@ -310,9 +312,9 @@ export default function StayCalendarView({
   ];
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300">
       {/* Search and Filters Bar (Matching M&A Follow-ups) */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-b pb-4">
+      <div className={`${surfaceClass} flex flex-wrap items-center gap-2 p-3 sm:gap-3`}>
         {/* Search */}
         <div className="relative max-w-md flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -361,7 +363,7 @@ export default function StayCalendarView({
           variant="outline"
           size="sm"
           onClick={handleExportCsv}
-          className="h-8.5 sm:h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
+          className="h-8.5 sm:h-9 gap-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0 bg-background/70 backdrop-blur"
         >
           <Download className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
           <span>Export CSV</span>
@@ -377,7 +379,7 @@ export default function StayCalendarView({
 
       {/* Overdue Checkout Alert Banner (Matching M&A Past Due Alert) */}
       {overdueCheckouts.length > 0 && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 sm:p-4 dark:border-red-900 dark:bg-red-950/30">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm sm:p-4 dark:border-red-900 dark:bg-red-950/30">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
             <div className="min-w-0">
@@ -412,7 +414,7 @@ export default function StayCalendarView({
             role="button"
             tabIndex={0}
             aria-pressed={statusFilter === key}
-            className={`cursor-pointer rounded-lg border bg-card p-3 sm:p-4 transition hover:shadow-xs ${
+            className={`cursor-pointer rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition hover:shadow-md ${
               statusFilter === key ? STATUS_RING[key] : ''
             }`}
             onClick={() => setStatusFilter((prev) => (prev === key ? null : key))}
@@ -434,31 +436,25 @@ export default function StayCalendarView({
       </div>
 
       {/* View Layout Switcher */}
-      <div className="flex items-center justify-between border-b border-border pb-2">
-        <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-xl border border-border">
-          <Button
-            size="sm"
-            variant={viewLayout === 'timeline' ? 'default' : 'ghost'}
-            onClick={() => setViewLayout('timeline')}
-            className={`h-7 text-xs gap-1.5 cursor-pointer ${
-              viewLayout === 'timeline' ? 'bg-indigo-600 text-white' : 'text-muted-foreground'
+      <div className="flex flex-wrap items-center gap-1.5">
+        {([
+          { key: 'timeline', label: 'Unit Timeline (Rows)', Icon: LayoutList },
+          { key: 'calendar', label: 'Monthly Calendar Grid', Icon: CalendarDays },
+        ] as const).map(({ key, label, Icon }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setViewLayout(key)}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              viewLayout === key
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border text-muted-foreground hover:bg-muted'
             }`}
           >
-            <LayoutList className="w-3.5 h-3.5" />
-            <span>Unit Timeline (Rows)</span>
-          </Button>
-          <Button
-            size="sm"
-            variant={viewLayout === 'calendar' ? 'default' : 'ghost'}
-            onClick={() => setViewLayout('calendar')}
-            className={`h-7 text-xs gap-1.5 cursor-pointer ${
-              viewLayout === 'calendar' ? 'bg-indigo-600 text-white' : 'text-muted-foreground'
-            }`}
-          >
-            <CalendarDays className="w-3.5 h-3.5" />
-            <span>Monthly Calendar Grid</span>
-          </Button>
-        </div>
+            <Icon className="w-3.5 h-3.5" />
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
 
       {/* The Calendar / Timeline */}
@@ -529,7 +525,7 @@ export default function StayCalendarView({
                         </span>
                       </div>
                       <p className="truncate text-xs text-muted-foreground mt-0.5">
-                        {stay.property_name || 'Corporate Condo'} • Unit #{stay.unit_number} ({stay.city})
+                        {stay.property_name || 'Property'} • {formatUnitLabel(stay.unit_number)} ({stay.city})
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-1">
                         Dates: <span className="font-medium text-foreground">{stay.check_in_date} → {stay.check_out_date}</span> • {stay.guest_count} Guest{stay.guest_count === 1 ? '' : 's'}
@@ -563,7 +559,7 @@ export default function StayCalendarView({
                             onUpdateStatus(stay.id, 'CHECKED_OUT');
                             setDayInPopup(null);
                           }}
-                          className="h-7 text-[11px] text-slate-600 hover:text-slate-700"
+                          className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
                         >
                           <LogOut className="w-3 h-3 mr-1" /> Check Out
                         </Button>
@@ -641,9 +637,9 @@ export default function StayCalendarView({
                   <div className="font-semibold text-[11px] uppercase tracking-wider text-muted-foreground">
                     Condo Property
                   </div>
-                  <div className="font-bold text-sm text-foreground">{selectedStayForDetail.property_name || 'Corporate Condo'}</div>
+                  <div className="font-bold text-sm text-foreground">{selectedStayForDetail.property_name || 'Property'}</div>
                   <div className="text-muted-foreground font-mono font-medium">
-                    Unit #{selectedStayForDetail.unit_number} • {selectedStayForDetail.city}
+                    {formatUnitLabel(selectedStayForDetail.unit_number)} • {selectedStayForDetail.city}
                   </div>
                   {selectedStayForDetail.address && (
                     <div className="text-muted-foreground text-[11px]">{selectedStayForDetail.address}</div>
@@ -720,7 +716,7 @@ export default function StayCalendarView({
                     onUpdateStatus(selectedStayForDetail.id, 'CHECKED_OUT');
                     setSelectedStayForDetail(null);
                   }}
-                  className="bg-slate-700 hover:bg-slate-800 text-white text-xs gap-1"
+                  className="bg-secondary hover:bg-secondary/80 text-secondary-foreground text-xs gap-1"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Check Out Guest</span>
@@ -771,11 +767,11 @@ const FollowUpCalendarGrid = memo(function FollowUpCalendarGrid({
   onDayClick: (day: Date) => void;
 }) {
   return (
-    <div>
+    <div className={`${surfaceClass} p-5`}>
       {/* Month Header (Matching M&A FollowUpCalendar exactly) */}
-      <div className="flex items-end justify-between gap-4 border-b pb-4">
+      <div className="flex items-end justify-between gap-4 border-b border-border/60 pb-4">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">{format(monthStart, 'MMMM yyyy')}</h2>
+          <h2 className="text-lg font-semibold tracking-tight">{format(monthStart, 'MMMM yyyy')}</h2>
           <p className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {monthCount} stay{monthCount === 1 ? '' : 's'} this month
           </p>
@@ -808,11 +804,11 @@ const FollowUpCalendarGrid = memo(function FollowUpCalendarGrid({
       </div>
 
       {/* Grid (Matching M&A FollowUpCalendar layout and styling) */}
-      <div className="mt-6 grid grid-cols-7 border-l border-t">
+      <div className="mt-6 grid grid-cols-7 overflow-hidden rounded-xl border-l border-t border-border/60">
         {WEEKDAYS.map((label) => (
           <div
             key={label}
-            className="border-r border-b bg-card px-2 py-2 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+            className="border-r border-b border-border/60 bg-muted/40 px-2 py-2 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
           >
             {label}
           </div>
@@ -828,7 +824,7 @@ const FollowUpCalendarGrid = memo(function FollowUpCalendarGrid({
           return (
             <div
               key={key}
-              className={`min-h-[96px] sm:min-h-[105px] border-r border-b p-2 ${
+              className={`min-h-[96px] sm:min-h-[105px] border-r border-b border-border/60 p-2 ${
                 outside ? 'bg-muted/40' : 'bg-background'
               } ${entries.length ? 'cursor-pointer transition-colors hover:bg-muted/60' : ''}`}
               onClick={entries.length ? () => onDayClick(day) : undefined}
@@ -873,7 +869,7 @@ const FollowUpCalendarGrid = memo(function FollowUpCalendarGrid({
                       } ${isCheckIn ? 'border-l-2 border-l-indigo-600 font-semibold' : ''}`}
                     >
                       {isCheckIn && <LogIn className="w-2.5 h-2.5 shrink-0 text-emerald-600 dark:text-emerald-400" />}
-                      {isCheckOut && <LogOut className="w-2.5 h-2.5 shrink-0 text-slate-500" />}
+                      {isCheckOut && <LogOut className="w-2.5 h-2.5 shrink-0 text-muted-foreground" />}
                       {!isCheckIn && !isCheckOut && <span className="w-1 h-1 rounded-full bg-indigo-500 shrink-0" />}
                       <span className="truncate">
                         {isCheckIn ? `In: ${stay.employee_name?.split(' ')[0]}` : isCheckOut ? `Out: ${stay.employee_name?.split(' ')[0]}` : stay.employee_name?.split(' ')[0]}
@@ -945,11 +941,11 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
   };
 
   return (
-    <div className="space-y-4">
+    <div className={`${surfaceClass} space-y-4 p-5`}>
       {/* Navigation & Timeframe Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/60 pb-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-base sm:text-lg font-semibold tracking-tight text-foreground">
             {timeframe === 'week' ? (
               <span>
                 {format(days[0], 'MMM d')} – {format(days[days.length - 1], 'MMM d, yyyy')} — Weekly Unit Timeline
@@ -967,29 +963,21 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Timeframe Switcher (Default: Week, Switchable to Month) */}
-          <div className="flex items-center p-1 bg-muted/80 rounded-xl border border-border">
-            <button
-              type="button"
-              onClick={() => setTimeframe('week')}
-              className={`h-7 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                timeframe === 'week'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Week View
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimeframe('month')}
-              className={`h-7 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                timeframe === 'month'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Month View
-            </button>
+          <div className="flex items-center gap-1.5">
+            {([['week', 'Week View'], ['month', 'Month View']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTimeframe(key)}
+                className={`cursor-pointer rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  timeframe === key
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Navigation Controls */}
@@ -1025,7 +1013,7 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
       </div>
 
       {/* Horizontal Scrollable Table */}
-      <div className="overflow-x-auto border border-border rounded-xl bg-card shadow-xs">
+      <div className="overflow-x-auto rounded-xl border border-border/60 bg-card">
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="bg-muted/50 border-b border-border text-muted-foreground font-semibold">
@@ -1076,13 +1064,13 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
                   <tr key={u.id} className="hover:bg-muted/10 transition-colors">
                     <td className="py-2.5 px-3 sticky left-0 bg-card z-10 border-r border-border text-left shadow-xs">
                       <div className="font-bold text-xs text-foreground truncate max-w-[200px]">
-                        Unit #{u.unit_number}
+                        {formatUnitLabel(u.unit_number)}
                       </div>
                       <div className="text-[11px] text-muted-foreground truncate max-w-[200px]">
                         {u.property_name || 'Property'} • {u.city}
                       </div>
                       <div className="text-[10px] text-muted-foreground/80 mt-0.5">
-                        {u.bedrooms} Bed • Cap {u.guest_capacity || u.max_occupants || 2}
+                        {u.bedrooms} {u.bedrooms === 1 ? 'bed' : 'beds'} · sleeps {u.guest_capacity || u.max_occupants || 2}
                       </div>
                     </td>
                     {days.map((d) => {
@@ -1137,7 +1125,7 @@ const UnitTimelineGrid = memo(function UnitTimelineGrid({
                           className={`p-0.5 border-r border-border/40 text-center cursor-pointer group hover:bg-emerald-500/10 ${
                             isCurrent ? 'bg-indigo-500/5' : ''
                           }`}
-                          title={`Click to book Unit #${u.unit_number} on ${dStr}`}
+                          title={`Click to book ${formatUnitLabel(u.unit_number)} on ${dStr}`}
                         >
                           <div className="h-9 w-full rounded flex items-center justify-center text-transparent group-hover:text-emerald-600 transition-colors text-xs font-bold">
                             +

@@ -1,6 +1,10 @@
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { realEstateService } from '@/services/realEstateService';
+import { bookingService } from '@/services/bookingService';
+import { formatPropertyAddress } from '@/types/realEstate';
+import { formatUnitLabel } from '@/types/bookings';
 import { useAuth } from '@/lib/AuthContext';
 import {
   Calendar as CalendarIcon,
@@ -16,11 +20,14 @@ import {
   Sparkles,
   Filter,
   Building2,
+  DoorOpen,
+  BedDouble,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { PageHeader, SectionCard, StatCard, surfaceClass } from '@/components/common/PageKit';
 import {
   Dialog,
   DialogContent,
@@ -50,7 +57,10 @@ export default function BookingsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Opened from a property (?property=<id>): only that property's rooms and stays are shown.
+  const propertyFilter = searchParams.get('property');
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(propertyFilter ?? '');
 
   // New Booking State
   const [newBooking, setNewBooking] = useState(() => ({
@@ -66,15 +76,15 @@ export default function BookingsPage() {
   }));
 
   // Load Bookings
-  const { data: bookings = [], isLoading } = useQuery({
+  const { data: allBookings = [], isLoading } = useQuery({
     queryKey: ['real-estate-bookings', selectedCity, selectedStatus],
-    queryFn: () => realEstateService.getBookings({ city: selectedCity, status: selectedStatus }),
+    queryFn: () => bookingService.getStays({ city: selectedCity, status: selectedStatus }),
   });
 
   // Load All Units
-  const { data: units = [] } = useQuery({
+  const { data: allUnits = [] } = useQuery({
     queryKey: ['real-estate-units-all'],
-    queryFn: () => realEstateService.getUnits(),
+    queryFn: () => bookingService.getUnits(),
   });
 
   // Load All Existing Properties
@@ -82,6 +92,18 @@ export default function BookingsPage() {
     queryKey: ['real-estate-properties-all'],
     queryFn: () => realEstateService.getProperties(),
   });
+
+  // Rooms and stays always belong to a property that exists in the portfolio; anything else is left out.
+  const propertyIds = useMemo(() => new Set(properties.map((p) => p.id)), [properties]);
+  const units = useMemo(
+    () => allUnits.filter((u) => propertyIds.has(u.property_id) && (!propertyFilter || u.property_id === propertyFilter)),
+    [allUnits, propertyIds, propertyFilter],
+  );
+  const bookings = useMemo(
+    () => allBookings.filter((b) => !!b.property_id && propertyIds.has(b.property_id) && (!propertyFilter || b.property_id === propertyFilter)),
+    [allBookings, propertyIds, propertyFilter],
+  );
+  const filteredProperty = propertyFilter ? properties.find((p) => p.id === propertyFilter) : undefined;
 
   const handleOpenBookingModal = (prefill?: { unit_id?: string; check_in_date?: string }) => {
     let targetUnitId = prefill?.unit_id || newBooking.unit_id;
@@ -94,7 +116,7 @@ export default function BookingsPage() {
         targetPropId = foundUnit.property_id;
       }
     } else if (!targetPropId && properties.length > 0) {
-      const firstCondo = properties.find((p) => p.property_category === 'COMPANY_CONDO') || properties[0];
+      const firstCondo = properties[0];
       targetPropId = firstCondo.id;
       const propUnit = units.find((u) => u.property_id === targetPropId);
       if (propUnit) {
@@ -183,7 +205,7 @@ export default function BookingsPage() {
 
   // Create Booking Mutation
   const createBookingMutation = useMutation({
-    mutationFn: (data: typeof newBooking) => realEstateService.createBooking(data),
+    mutationFn: (data: typeof newBooking) => bookingService.createStay(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['real-estate-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['real-estate-summary'] });
@@ -199,7 +221,7 @@ export default function BookingsPage() {
   // Update Booking Status Mutation
   const updateStatusMutation = useMutation({
     mutationFn: ({ stayId, status, notes }: { stayId: string; status: string; notes?: string }) =>
-      realEstateService.updateBookingStatus(stayId, status, notes),
+      bookingService.updateStayStatus(stayId, status, notes),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['real-estate-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['real-estate-summary'] });
@@ -238,7 +260,7 @@ export default function BookingsPage() {
         );
       case 'CHECKED_OUT':
         return (
-          <Badge className="bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30 font-medium">
+          <Badge className="bg-muted text-muted-foreground border-border font-medium">
             <LogOut className="w-3 h-3 mr-1" /> Checked Out
           </Badge>
         );
@@ -257,6 +279,17 @@ export default function BookingsPage() {
     }
   };
 
+  const stats = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return {
+      rooms: units.length,
+      freeToday: units.filter((u) => u.is_available_today ?? u.status === 'AVAILABLE').length,
+      inProgress: bookings.filter((b) => b.status === 'CHECKED_IN').length,
+      upcoming: bookings.filter((b) => b.status === 'CONFIRMED' && b.check_in_date >= todayStr).length,
+      maintenance: units.filter((u) => u.status === 'MAINTENANCE' || !!u.active_maintenance).length,
+    };
+  }, [units, bookings]);
+
   const stayNights = useMemo(() => {
     if (!newBooking.check_in_date || !newBooking.check_out_date) return 0;
     const cin = new Date(newBooking.check_in_date).getTime();
@@ -266,56 +299,53 @@ export default function BookingsPage() {
   }, [newBooking.check_in_date, newBooking.check_out_date]);
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-indigo-900/90 via-slate-900 to-indigo-950 text-white border border-indigo-800/40 shadow-xl">
-        <div className="space-y-1 max-w-xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-[11px] font-semibold text-indigo-200">
-            <CalendarDays className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Employee Stays & Desk-Booking Style Engine</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Condo Availability & Bookings</h1>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Reserve stays at company condos across Los Angeles, Dubai, London, Vancouver, Chicago,
-            Dublin, Berlin, and Singapore for corporate business trips.
-          </p>
-        </div>
+    <div className="space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title="Stays & availability"
+        description="Reserve stays at company condos for corporate business trips and see which rooms are free."
+        actions={
+          <Button onClick={() => handleOpenBookingModal()} className="gap-2 font-semibold cursor-pointer">
+            <Plus className="w-4 h-4" />
+            <span>Book a Condo Stay</span>
+          </Button>
+        }
+      />
 
-        <Button
-          onClick={() => handleOpenBookingModal()}
-          className="bg-indigo-500 hover:bg-indigo-600 text-white gap-2 font-semibold shadow-lg shadow-indigo-500/20 cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Book a Condo Stay</span>
-        </Button>
+      {propertyFilter && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+          <Building2 className="h-4 w-4 text-primary" />
+          <span>Showing only <strong>{filteredProperty ? formatPropertyAddress(filteredProperty) : 'the selected property'}</strong></span>
+          <button type="button" className="ml-auto text-xs font-medium text-primary hover:underline" onClick={() => setSearchParams({})}>Show all properties</button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard icon={<DoorOpen className="h-5 w-5" />} label="Rooms" value={stats.rooms} hint={`${stats.freeToday} free today`} tone="bg-indigo-500" />
+        <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Free today" value={stats.freeToday} hint="Available to book now" tone="bg-emerald-500" />
+        <StatCard icon={<BedDouble className="h-5 w-5" />} label="Stays in progress" value={stats.inProgress} hint={`${stats.upcoming} upcoming`} tone="bg-sky-500" />
+        <StatCard icon={<Wrench className="h-5 w-5" />} label="Maintenance" value={stats.maintenance} hint="Rooms blocked for work" tone="bg-amber-500" />
       </div>
 
       {/* Mode Switcher Tabs */}
-      <div className="flex items-center justify-between border-b border-border pb-2">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {([
+          { key: 'calendar', label: 'Availability & Stay Calendar', Icon: CalendarDays },
+          { key: 'table', label: `All Stays Directory (${filteredBookings.length})`, Icon: CalendarIcon },
+        ] as const).map(({ key, label, Icon }) => (
           <button
-            onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === 'calendar'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              activeTab === key
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border text-muted-foreground hover:bg-muted'
             }`}
           >
-            <CalendarDays className="w-4 h-4" />
-            <span>Availability & Stay Calendar</span>
+            <Icon className="w-3.5 h-3.5" />
+            <span>{label}</span>
           </button>
-          <button
-            onClick={() => setActiveTab('table')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === 'table'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
-            <CalendarIcon className="w-4 h-4" />
-            <span>All Stays Directory ({filteredBookings.length})</span>
-          </button>
-        </div>
+        ))}
       </div>
 
       {/* TAB 1: Availability & Stay Calendar */}
@@ -332,9 +362,9 @@ export default function BookingsPage() {
 
       {/* TAB 2: All Stays Directory Table */}
       {activeTab === 'table' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Filter and Search Bar */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-card p-3 rounded-xl border border-border">
+          <div className={`flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3 ${surfaceClass}`}>
             <div className="flex flex-wrap items-center gap-2">
               {/* City Filter */}
               <Select value={selectedCity} onValueChange={setSelectedCity}>
@@ -388,20 +418,18 @@ export default function BookingsPage() {
           </div>
 
           {/* Bookings Table */}
-          <Card className="border border-border/70 overflow-hidden shadow-xs">
-            <CardHeader className="py-3.5 px-4 bg-muted/20 border-b border-border">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <CalendarIcon className="w-4 h-4 text-indigo-600" />
-                  <span>Registered Stays ({filteredBookings.length})</span>
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Click actions to Check In, Check Out, or Cancel a stay.
-                </CardDescription>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-0">
+          <SectionCard
+            flush
+            title={
+              <span className="flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-indigo-500" />
+                <span>Registered Stays ({filteredBookings.length})</span>
+              </span>
+            }
+            subtitle="Click actions to Check In, Check Out, or Cancel a stay."
+            className="overflow-hidden"
+          >
+            <div>
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent bg-muted/40">
@@ -457,10 +485,10 @@ export default function BookingsPage() {
                           <TableCell className="py-3">
                             <div>
                               <div className="font-medium text-xs text-foreground truncate max-w-[200px]">
-                                {b.property_name || 'Corporate Condo'}
+                                {properties.find((p) => p.id === b.property_id)?.property_name || b.property_name || 'Property'}
                               </div>
                               <div className="text-[11px] text-muted-foreground font-mono font-bold">
-                                Unit #{b.unit_number || 'N/A'}
+                                {formatUnitLabel(b.unit_number)}
                               </div>
                             </div>
                           </TableCell>
@@ -519,7 +547,7 @@ export default function BookingsPage() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => updateStatusMutation.mutate({ stayId: b.id, status: 'CHECKED_OUT' })}
-                                  className="h-7 text-[11px] text-slate-600 hover:text-slate-700"
+                                  className="h-7 text-[11px] text-muted-foreground hover:text-foreground"
                                 >
                                   <LogOut className="w-3 h-3 mr-1" /> Check Out
                                 </Button>
@@ -542,8 +570,8 @@ export default function BookingsPage() {
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
         </div>
       )}
 
@@ -580,26 +608,11 @@ export default function BookingsPage() {
                   <SelectValue placeholder="Choose a property or condo..." />
                 </SelectTrigger>
                 <SelectContent className="max-h-72">
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Corporate Condos & Residences
-                  </div>
-                  {properties
-                    .filter((p) => p.property_category === 'COMPANY_CONDO')
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.city} • {p.name} {p.address ? `(${p.address})` : ''}
-                      </SelectItem>
-                    ))}
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-t mt-1 pt-1">
-                    Offices & Commercial Properties
-                  </div>
-                  {properties
-                    .filter((p) => p.property_category !== 'COMPANY_CONDO')
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.city} • {p.name} ({p.property_category || p.property_type || 'Office'})
-                      </SelectItem>
-                    ))}
+                  {properties.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {formatPropertyAddress(p)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -623,7 +636,7 @@ export default function BookingsPage() {
                   <SelectContent className="max-h-60">
                     {unitsForSelectedProperty.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
-                        Unit #{u.unit_number} {u.unit_type ? `(${u.unit_type})` : ''} - {u.bedrooms} Bed / {u.guest_capacity || u.max_occupants || 2} Guests max
+                        {formatUnitLabel(u.unit_number)} {u.unit_type ? `(${u.unit_type})` : ''} - {u.bedrooms} Bed / {u.guest_capacity || u.max_occupants || 2} Guests max
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -638,8 +651,8 @@ export default function BookingsPage() {
                   <span className="flex items-center gap-1.5 text-sm">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     <span>
-                      {selectedPropertyDetails?.name || selectedUnitDetails?.property_name || 'Company Condo'}
-                      {selectedUnitDetails?.unit_number ? ` • Unit #${selectedUnitDetails.unit_number}` : ''}
+                      {(selectedPropertyDetails ? formatPropertyAddress(selectedPropertyDetails) : null) || selectedUnitDetails?.property_name || 'Property'}
+                      {selectedUnitDetails?.unit_number ? ` • ${formatUnitLabel(selectedUnitDetails.unit_number)}` : ''}
                     </span>
                   </span>
                   <Badge variant="outline" className="text-[10px] bg-background">
@@ -647,7 +660,7 @@ export default function BookingsPage() {
                   </Badge>
                 </div>
                 <div className="text-muted-foreground text-[11px]">
-                  {selectedPropertyDetails?.address || selectedUnitDetails?.address || 'Corporate Executive Condo'}
+                  {selectedUnitDetails?.address || 'Corporate Executive Condo'}
                 </div>
                 <div className="flex flex-wrap gap-3 text-[11px] text-indigo-600 dark:text-indigo-300 pt-0.5">
                   <span>{selectedUnitDetails?.bedrooms || 2} Bedrooms</span>

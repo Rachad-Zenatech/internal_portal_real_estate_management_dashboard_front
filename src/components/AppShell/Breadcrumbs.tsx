@@ -42,10 +42,8 @@ export default function Breadcrumbs() {
     const specialNames: Record<string, string> = {
       dashboard: "Dashboard",
       "real-estate": "Company Condos",
-      portfolio: "Portfolio Directory",
       bookings: "Availability & Stays",
-      documents: "Document Vault",
-      payments: "Rent & Tax Tracking",
+      stays: "Availability & Stays",
       users: "Users",
       roles: "Roles",
       "user-role-assignment": "User Role Assignments",

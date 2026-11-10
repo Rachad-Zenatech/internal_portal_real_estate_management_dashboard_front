@@ -308,6 +308,23 @@ export const apiClient = {
     return handleResponse<T>(res);
   },
   
+  /** The response body as a Blob, with the session credentials (for previews of files the API protects). */
+  async getBlob(endpoint: string): Promise<Blob> {
+    const res = await monitoredFetch(endpoint, {
+      method: "GET",
+      credentials: "include",
+      skipGlobalLoading: true,
+      headers: {
+        ...getAuthHeaders(),
+      } as HeadersInit
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error((err as { detail: string }).detail || "Request failed");
+    }
+    return res.blob();
+  },
+
   async downloadFile(endpoint: string, filename: string): Promise<void> {
     const res = await monitoredFetch(endpoint, {
       method: "GET",

@@ -34,10 +34,8 @@ export const navigation: NavigationItem[] = [
     icon: Building2,
     section: "REAL ESTATE",
     subItems: [
-      { label: "Portfolio", path: "/real-estate/portfolio", navigationCode: "REAL_ESTATE_PORTFOLIO" },
       { label: "Properties", path: "/real-estate/properties", navigationCode: "REAL_ESTATE_PROPERTIES" },
       { label: "Stays & Availability", path: "/real-estate/stays", navigationCode: "REAL_ESTATE_BOOKINGS" },
-      { label: "Accounting", path: "/real-estate/accounting", navigationCode: "REAL_ESTATE_PAYMENTS" },
     ],
   },
   {

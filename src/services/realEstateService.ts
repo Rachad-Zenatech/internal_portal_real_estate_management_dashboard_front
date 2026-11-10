@@ -1,562 +1,83 @@
 import { apiClient } from './apiClient';
 import type {
-  ChargeDetail, GenerateScheduleResult, LeasePaymentPayload, LeasePaymentsResponse, LeasePaymentTerms,
-} from '@/types/leasePayments';
-import type {
-  PropertyRegister,
-  RegisterEntityKey,
-  PropertyAgreement,
-  AgreementAmendment,
-  ComplianceIssue,
-  MaxTermReviewStatus,
-  Party,
-  Location,
-  Property,
-  Unit,
-  MaintenanceBlock,
-  Lease,
-  LeaseVersion,
-  LeaseExtractionJob,
-  Stay,
-  StayCreateRequest,
-  PropertyDocument,
-  PropertyObligation,
-  PropertyPayment,
-  RealEstateSummary,
-  AccountingSummary,
-  BulkImportPayload,
-  BulkImportResponse,
-  PropertyExtractionJob,
-  PropertyInspection,
-  PropertyInspectionFinding,
-  PropertyActivityLog,
-  ExtractionEngineStatus,
-  PropertyDuplicatesResponse,
-  PropertyMergePayload,
-} from '@/types';
+  AddressSuggestion, Property, PropertyDocument, PropertyInput, ResearchRequest, ResearchResult, ResearchStatusInfo,
+} from '@/types/realEstate';
+
+export interface PropertyListParams {
+  search?: string;
+  status?: string;
+  city?: string;
+  state?: string;
+  limit?: number;
+  offset?: number;
+}
 
 export const realEstateService = {
-  // Summary KPI & Executive Portfolio Metrics
-  async getSummary(): Promise<RealEstateSummary> {
-    return apiClient.get<RealEstateSummary>('/api/real-estate/summary');
-  },
-
-  // Locations
-  async getLocations(): Promise<Location[]> {
-    return apiClient.get<Location[]>('/api/real-estate/locations');
-  },
-
-  async getLocation(id: string): Promise<Location> {
-    return apiClient.get<Location>(`/api/real-estate/locations/${id}`);
-  },
-
-  async createLocation(data: Partial<Location>): Promise<Location> {
-    return apiClient.post<Location>('/api/real-estate/locations', data);
-  },
-
-  async updateLocation(id: string, data: Partial<Location>): Promise<Location> {
-    return apiClient.put<Location>(`/api/real-estate/locations/${id}`, data);
-  },
-
-  // Properties
-  async getProperties(params?: {
-    location_id?: string;
-    city?: string;
-    category?: string;
-    ownership_type?: string;
-    is_ma?: boolean;
-    status?: string;
-    inventory_status?: string;
-    search?: string;
-    include_archived?: boolean;
-    occupancy_status?: string;
-    tenure?: string;
-  }): Promise<Property[]> {
+  async getProperties(params: PropertyListParams = {}): Promise<Property[]> {
     const query = new URLSearchParams();
-    if (params?.location_id) query.set('location_id', params.location_id);
-    if (params?.city && params.city !== 'ALL') query.set('city', params.city);
-    if (params?.category && params.category !== 'ALL') query.set('category', params.category);
-    if (params?.ownership_type && params.ownership_type !== 'ALL') query.set('ownership_type', params.ownership_type);
-    if (params?.is_ma !== undefined) query.set('is_ma', String(params.is_ma));
-    if (params?.status && params.status !== 'ALL') query.set('status', params.status);
-    if (params?.inventory_status && params.inventory_status !== 'ALL') query.set('inventory_status', params.inventory_status);
-    if (params?.search) query.set('search', params.search);
-    if (params?.include_archived) query.set('include_archived', 'true');
-    if (params?.occupancy_status && params.occupancy_status !== 'ALL') query.set('occupancy_status', params.occupancy_status);
-    if (params?.tenure && params.tenure !== 'ALL') query.set('tenure', params.tenure);
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== '' && value !== 'ALL') query.set(key, String(value));
+    }
     const qs = query.toString();
     return apiClient.get<Property[]>(`/api/real-estate/properties${qs ? `?${qs}` : ''}`);
   },
 
-  async getPropertyDetails(id: string): Promise<Property> {
+  async getProperty(id: string): Promise<Property> {
     return apiClient.get<Property>(`/api/real-estate/properties/${id}`);
   },
 
-  async getPropertyRegister(id: string): Promise<PropertyRegister> {
-    return apiClient.get<PropertyRegister>(`/api/real-estate/properties/${id}/register`);
+  /** Address typeahead (OpenStreetMap data through the Photon geocoder). */
+  async suggestAddresses(q: string): Promise<AddressSuggestion[]> {
+    return apiClient.get<AddressSuggestion[]>(`/api/real-estate/properties/suggest?q=${encodeURIComponent(q)}`, { skipGlobalLoading: true });
   },
 
-  // --- Property register writes (ownership, acquisition, obligations, assets, work orders, utilities, insurance, compliance) ---
-  async createRegisterRecord(propertyId: string, entity: RegisterEntityKey, data: Record<string, unknown>): Promise<Record<string, any>> {
-    return apiClient.post<Record<string, any>>(`/api/real-estate/properties/${propertyId}/${entity}`, data);
+  /** Common property types plus any custom type already in use, for the property-type autocomplete. */
+  async listPropertyTypes(): Promise<string[]> {
+    return apiClient.get<string[]>('/api/real-estate/properties/types', { skipGlobalLoading: true });
   },
 
-  async updateRegisterRecord(entity: RegisterEntityKey, recordId: string, data: Record<string, unknown>): Promise<Record<string, any>> {
-    return apiClient.put<Record<string, any>>(`/api/real-estate/${entity}/${recordId}`, data);
+  /** Checks the database first and only researches what is missing. Call after an address is chosen, not per keystroke. */
+  async researchProperty(body: ResearchRequest): Promise<ResearchResult> {
+    return apiClient.post<ResearchResult>('/api/real-estate/properties/research', body, { skipGlobalLoading: true });
   },
 
-  async deleteRegisterRecord(entity: RegisterEntityKey, recordId: string): Promise<void> {
-    await apiClient.delete(`/api/real-estate/${entity}/${recordId}`);
+  async getResearchStatus(): Promise<ResearchStatusInfo> {
+    return apiClient.get<ResearchStatusInfo>('/api/real-estate/properties/research/status', { skipGlobalLoading: true });
   },
 
-  // --- Agreements, amendments and the maximum permissible term ---
-  async createAgreement(propertyId: string, data: Record<string, unknown>): Promise<PropertyAgreement> {
-    return apiClient.post<PropertyAgreement>(`/api/real-estate/properties/${propertyId}/agreements`, data);
+  async getResearchJob(jobId: string): Promise<ResearchResult> {
+    return apiClient.get<ResearchResult>(`/api/real-estate/properties/research/jobs/${jobId}`, { skipGlobalLoading: true });
   },
 
-  async updateAgreement(agreementId: string, data: Record<string, unknown>): Promise<PropertyAgreement> {
-    return apiClient.put<PropertyAgreement>(`/api/real-estate/agreements/${agreementId}`, data);
+  /** Marks values a person typed or reviewed as confirmed; later research never overwrites them. */
+  async confirmResearch(body: { cache_key: string; property_id?: string; fields: Record<string, unknown> }): Promise<{ confirmed: string[] }> {
+    return apiClient.post<{ confirmed: string[] }>('/api/real-estate/properties/research/confirm', body, { skipGlobalLoading: true });
   },
 
-  async deleteAgreement(agreementId: string): Promise<void> {
-    await apiClient.delete(`/api/real-estate/agreements/${agreementId}`);
-  },
-
-  async changeAgreementStatus(agreementId: string, data: { status: string; actual_termination_date?: string | null; notes?: string | null }): Promise<PropertyAgreement> {
-    return apiClient.post<PropertyAgreement>(`/api/real-estate/agreements/${agreementId}/status`, data);
-  },
-
-  async reviewMaxTerm(
-    agreementId: string,
-    data: { status: MaxTermReviewStatus; max_permissible_end_date?: string | null; max_term_source?: string | null; notes?: string | null },
-  ): Promise<PropertyAgreement> {
-    return apiClient.post<PropertyAgreement>(`/api/real-estate/agreements/${agreementId}/max-term-review`, data);
-  },
-
-  async createAmendment(agreementId: string, data: Record<string, unknown>): Promise<AgreementAmendment> {
-    return apiClient.post<AgreementAmendment>(`/api/real-estate/agreements/${agreementId}/amendments`, data);
-  },
-
-  async approveAmendment(amendmentId: string): Promise<AgreementAmendment> {
-    return apiClient.post<AgreementAmendment>(`/api/real-estate/agreement-amendments/${amendmentId}/approve`, {});
-  },
-
-  async updateComplianceIssue(issueId: string, data: { status: string; resolution_notes?: string | null }): Promise<ComplianceIssue> {
-    return apiClient.put<ComplianceIssue>(`/api/real-estate/compliance-issues/${issueId}`, data);
-  },
-
-  async updateDocumentMetadata(
-    documentId: string,
-    data: { expiry_date?: string | null; document_date?: string | null; signature_status?: string | null; access_classification?: string | null },
-  ): Promise<PropertyDocument> {
-    return apiClient.put<PropertyDocument>(`/api/real-estate/documents/${documentId}/metadata`, data);
-  },
-
-  async getParties(search?: string): Promise<Party[]> {
-    const qs = search ? `?search=${encodeURIComponent(search)}` : '';
-    return apiClient.get<Party[]>(`/api/real-estate/parties${qs}`);
-  },
-
-  async createProperty(data: Partial<Property>): Promise<Property> {
+  async createProperty(data: PropertyInput): Promise<Property> {
     return apiClient.post<Property>('/api/real-estate/properties', data);
   },
 
-  async updateProperty(id: string, data: Partial<Property>): Promise<Property> {
+  async updateProperty(id: string, data: PropertyInput): Promise<Property> {
     return apiClient.put<Property>(`/api/real-estate/properties/${id}`, data);
   },
 
-  async verifyInventory(id: string, status: string, notes?: string): Promise<Property> {
-    return apiClient.put<Property>(`/api/real-estate/properties/${id}/verify-inventory`, { status, notes });
+  async deleteProperty(id: string): Promise<void> {
+    await apiClient.delete<void>(`/api/real-estate/properties/${id}`);
   },
 
-  async archiveProperty(id: string, archive: boolean = true): Promise<Property> {
-    return apiClient.put<Property>(`/api/real-estate/properties/${id}/archive?archive=${archive}`, {});
+  // ─── Documents ────────────────────────────────────────────────────────────
+  async listDocuments(propertyId: string): Promise<PropertyDocument[]> {
+    return apiClient.get<PropertyDocument[]>(`/api/real-estate/properties/${propertyId}/documents`, { skipGlobalLoading: true });
   },
 
-  // Units & Availability
-  async getUnits(params?: {
-    property_id?: string;
-    location_id?: string;
-    city?: string;
-    unit_type?: string;
-    status?: string;
-    is_bookable?: boolean;
-    check_in?: string;
-    check_out?: string;
-    guest_count?: number;
-    bedrooms?: number;
-    available_only?: boolean;
-    include_archived?: boolean;
-  }): Promise<Unit[]> {
-    const query = new URLSearchParams();
-    if (params?.property_id) query.set('property_id', params.property_id);
-    if (params?.location_id) query.set('location_id', params.location_id);
-    if (params?.city && params.city !== 'ALL') query.set('city', params.city);
-    if (params?.unit_type && params.unit_type !== 'ALL') query.set('unit_type', params.unit_type);
-    if (params?.status && params.status !== 'ALL') query.set('status', params.status);
-    if (params?.is_bookable !== undefined) query.set('is_bookable', String(params.is_bookable));
-    if (params?.check_in) query.set('check_in', params.check_in);
-    if (params?.check_out) query.set('check_out', params.check_out);
-    if (params?.guest_count) query.set('guest_count', String(params.guest_count));
-    if (params?.bedrooms) query.set('bedrooms', String(params.bedrooms));
-    if (params?.available_only) query.set('available_only', 'true');
-    if (params?.include_archived) query.set('include_archived', 'true');
-    const qs = query.toString();
-    return apiClient.get<Unit[]>(`/api/real-estate/units${qs ? `?${qs}` : ''}`);
+  async uploadDocuments(propertyId: string, files: File[]): Promise<PropertyDocument[]> {
+    const body = new FormData();
+    files.forEach((file) => body.append('files', file));
+    return apiClient.post<PropertyDocument[]>(`/api/real-estate/properties/${propertyId}/documents`, body, { actionLabel: 'Uploading documents', actionSubtitle: 'Saving the files to the property...' });
   },
 
-  async createUnit(data: Partial<Unit>): Promise<Unit> {
-    return apiClient.post<Unit>('/api/real-estate/units', data);
-  },
-
-  async updateUnit(id: string, data: Partial<Unit>): Promise<Unit> {
-    return apiClient.put<Unit>(`/api/real-estate/units/${id}`, data);
-  },
-
-  async archiveUnit(id: string, archive: boolean = true): Promise<Unit> {
-    return apiClient.put<Unit>(`/api/real-estate/units/${id}/archive?archive=${archive}`, {});
-  },
-
-  // Maintenance Blocks
-  async getMaintenanceBlocks(unitId?: string): Promise<MaintenanceBlock[]> {
-    return apiClient.get<MaintenanceBlock[]>(`/api/real-estate/maintenance-blocks${unitId ? `?unit_id=${unitId}` : ''}`);
-  },
-
-  async createMaintenanceBlock(data: { unit_id: string; start_date: string; end_date: string; reason: string; notes?: string }): Promise<MaintenanceBlock> {
-    return apiClient.post<MaintenanceBlock>('/api/real-estate/maintenance-blocks', data);
-  },
-
-  async deleteMaintenanceBlock(blockId: string): Promise<void> {
-    return apiClient.delete(`/api/real-estate/maintenance-blocks/${blockId}`);
-  },
-
-  // Stays & Bookings
-  async getBookings(params?: {
-    city?: string;
-    unit_id?: string;
-    property_id?: string;
-    location_id?: string;
-    status?: string;
-  }): Promise<Stay[]> {
-    const query = new URLSearchParams();
-    if (params?.city && params.city !== 'ALL') query.set('city', params.city);
-    if (params?.unit_id) query.set('unit_id', params.unit_id);
-    if (params?.property_id) query.set('property_id', params.property_id);
-    if (params?.location_id) query.set('location_id', params.location_id);
-    if (params?.status && params.status !== 'ALL') query.set('status', params.status);
-    const qs = query.toString();
-    return apiClient.get<Stay[]>(`/api/real-estate/bookings${qs ? `?${qs}` : ''}`);
-  },
-
-  async createBooking(data: StayCreateRequest): Promise<Stay> {
-    return apiClient.post<Stay>('/api/real-estate/bookings', data);
-  },
-
-  async updateBookingStatus(stayId: string, status: string, notes?: string): Promise<Stay> {
-    return apiClient.put<Stay>(`/api/real-estate/bookings/${stayId}/status`, { status, notes });
-  },
-
-  // Leases & Versions
-  async getLeases(propertyId?: string, status?: string): Promise<Lease[]> {
-    const query = new URLSearchParams();
-    if (propertyId) query.set('property_id', propertyId);
-    if (status && status !== 'ALL') query.set('status', status);
-    const qs = query.toString();
-    return apiClient.get<Lease[]>(`/api/real-estate/leases${qs ? `?${qs}` : ''}`);
-  },
-
-  async createLease(data: Partial<Lease>): Promise<Lease> {
-    return apiClient.post<Lease>('/api/real-estate/leases', data);
-  },
-
-  async updateLease(id: string, data: Partial<Lease>): Promise<Lease> {
-    return apiClient.put<Lease>(`/api/real-estate/leases/${id}`, data);
-  },
-
-  async getLeaseVersions(leaseId: string): Promise<LeaseVersion[]> {
-    return apiClient.get<LeaseVersion[]>(`/api/real-estate/leases/${leaseId}/versions`);
-  },
-
-  // Document Vault & PDF Upload
-  async getDocuments(params?: {
-    property_id?: string;
-    document_type?: string;
-  }): Promise<PropertyDocument[]> {
-    const query = new URLSearchParams();
-    if (params?.property_id) query.set('property_id', params.property_id);
-    if (params?.document_type && params.document_type !== 'ALL') {
-      query.set('document_type', params.document_type);
-    }
-    const qs = query.toString();
-    return apiClient.get<PropertyDocument[]>(`/api/real-estate/documents${qs ? `?${qs}` : ''}`);
-  },
-
-  async uploadDocument(formData: FormData): Promise<PropertyDocument> {
-    return apiClient.post<PropertyDocument>('/api/real-estate/documents/upload', formData);
-  },
-
-  async uploadLeaseAndExtract(formData: FormData): Promise<LeaseExtractionJob> {
-    return apiClient.post<LeaseExtractionJob>('/api/real-estate/leases/upload-and-extract', formData);
-  },
-
-  async getExtractionJob(jobId: string): Promise<LeaseExtractionJob> {
-    return apiClient.get<LeaseExtractionJob>(`/api/real-estate/extraction-jobs/${jobId}`);
-  },
-
-  async confirmLeaseExtraction(jobId: string, data: Record<string, any>): Promise<Lease> {
-    return apiClient.post<Lease>(`/api/real-estate/extraction-jobs/${jobId}/confirm`, data);
-  },
-
-  // Accounting Workspace
-  async getAccountingSummary(): Promise<AccountingSummary> {
-    return apiClient.get<AccountingSummary>('/api/real-estate/accounting/summary');
-  },
-
-  async getObligations(params?: {
-    property_id?: string;
-    location_id?: string;
-    obligation_type?: string;
-    currency?: string;
-    status?: string;
-    due_from?: string;
-    due_to?: string;
-  }): Promise<PropertyObligation[]> {
-    const query = new URLSearchParams();
-    if (params?.property_id) query.set('property_id', params.property_id);
-    if (params?.location_id) query.set('location_id', params.location_id);
-    if (params?.obligation_type && params.obligation_type !== 'ALL') query.set('obligation_type', params.obligation_type);
-    if (params?.currency && params.currency !== 'ALL') query.set('currency', params.currency);
-    if (params?.status && params.status !== 'ALL') query.set('status', params.status);
-    if (params?.due_from) query.set('due_from', params.due_from);
-    if (params?.due_to) query.set('due_to', params.due_to);
-    const qs = query.toString();
-    return apiClient.get<PropertyObligation[]>(`/api/real-estate/accounting/obligations${qs ? `?${qs}` : ''}`);
-  },
-
-  async createObligation(data: Partial<PropertyObligation>): Promise<PropertyObligation> {
-    return apiClient.post<PropertyObligation>('/api/real-estate/accounting/obligations', data);
-  },
-
-  async generateRentObligations(year: number, month: number, propertyId?: string): Promise<{ success: boolean; created_count: number; skipped_count: number }> {
-    return apiClient.post('/api/real-estate/accounting/generate-rent-obligations', {
-      year,
-      month,
-      property_id: propertyId,
-    });
-  },
-
-  async recordPayment(data: {
-    obligation_id: string;
-    amount_paid: number;
-    currency?: string;
-    payment_date: string;
-    payment_method: string;
-    transaction_reference?: string;
-    payment_evidence_document_id?: string;
-    notes?: string;
-  }): Promise<PropertyPayment> {
-    return apiClient.post<PropertyPayment>('/api/real-estate/accounting/payments', data);
-  },
-
-  async verifyPayment(paymentId: string, verification_status: string, verification_notes?: string): Promise<PropertyPayment> {
-    return apiClient.put<PropertyPayment>(`/api/real-estate/accounting/payments/${paymentId}/verify`, {
-      verification_status,
-      verification_notes,
-    });
-  },
-
-  async reversePayment(paymentId: string, reversal_reason: string): Promise<PropertyPayment> {
-    return apiClient.put<PropertyPayment>(`/api/real-estate/accounting/payments/${paymentId}/reverse`, {
-      reversal_reason,
-    });
-  },
-
-  // Bulk Ingestion
-  async bulkImportSpreadsheet(payload: BulkImportPayload): Promise<BulkImportResponse> {
-    return apiClient.post<BulkImportResponse>('/api/real-estate/bulk-import', payload);
-  },
-
-  // Configuration & Alert Rules
-  async getConfiguration(): Promise<Record<string, any>> {
-    return apiClient.get<Record<string, any>>('/api/real-estate/configuration');
-  },
-
-  async updateConfiguration(settings: Record<string, any>): Promise<Record<string, any>> {
-    return apiClient.put<Record<string, any>>('/api/real-estate/configuration', settings);
-  },
-
-  async triggerAlertsCheck(): Promise<{ success: boolean; message: string }> {
-    return apiClient.post<{ success: boolean; message: string }>('/api/real-estate/alerts/check');
-  },
-
-  // Document-Driven Property & Inspection Extraction Pipeline
-  async uploadAndExtractDocuments(formData: FormData): Promise<PropertyExtractionJob[]> {
-    return apiClient.post<PropertyExtractionJob[]>('/api/real-estate/documents/extract', formData);
-  },
-
-  async getPropertyExtractionJobs(status?: string): Promise<PropertyExtractionJob[]> {
-    const qs = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
-    return apiClient.get<PropertyExtractionJob[]>(`/api/real-estate/property-extraction-jobs${qs}`);
-  },
-
-  async getPropertyExtractionJob(jobId: string): Promise<PropertyExtractionJob> {
-    return apiClient.get<PropertyExtractionJob>(`/api/real-estate/property-extraction-jobs/${jobId}`);
-  },
-
-  async retryPropertyExtractionJob(
-    jobId: string,
-    engineMode?: string,
-    ocrLanguages?: string,
-    aiProvider?: string,
-    aiModel?: string
-  ): Promise<PropertyExtractionJob> {
-    const params = new URLSearchParams();
-    if (engineMode) params.set('engine_mode', engineMode);
-    if (ocrLanguages) params.set('ocr_languages', ocrLanguages);
-    if (aiProvider) params.set('ai_provider', aiProvider);
-    if (aiModel) params.set('ai_model', aiModel);
-    const qs = params.toString();
-    return apiClient.post<PropertyExtractionJob>(`/api/real-estate/property-extraction-jobs/${jobId}/retry${qs ? `?${qs}` : ''}`);
-  },
-
-  async confirmPropertyExtractionJob(
-    jobId: string,
-    payload: {
-      action_type: 'CREATE_NEW' | 'UPDATE_EXISTING' | string;
-      target_property_id?: string | null;
-      property_data: Record<string, any>;
-      create_inspections?: boolean;
-    }
-  ): Promise<Property> {
-    return apiClient.post<Property>(`/api/real-estate/property-extraction-jobs/${jobId}/confirm`, payload);
-  },
-
-  async deleteExtractionJob(jobId: string): Promise<void> {
-    return apiClient.delete(`/api/real-estate/property-extraction-jobs/${jobId}`);
-  },
-
-  async clearAllExtractionJobs(status?: string): Promise<{ cleared_count: number }> {
-    const qs = status ? `?status=${status}` : '';
-    return apiClient.delete(`/api/real-estate/property-extraction-jobs${qs}`);
-  },
-
-  async cleanupUnconfirmedExtractionJobs(jobIds?: string[]): Promise<{ count: number }> {
-    return apiClient.post<{ count: number }>('/api/real-estate/property-extraction-jobs/cleanup-unconfirmed', jobIds || null);
-  },
-
-  async deleteDocument(documentId: string): Promise<void> {
-    return apiClient.delete(`/api/real-estate/documents/${documentId}`);
-  },
-
-  getDocumentPageImageUrl(documentId: string, pageNum: number): string {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token') || '';
-    const query = token ? `?token=${encodeURIComponent(token)}` : '';
-    return `/api/real-estate/documents/${documentId}/page-image/${pageNum}${query}`;
-  },
-
-  getDocumentFileUrl(documentId: string): string {
-    const token = localStorage.getItem('token') || localStorage.getItem('access_token') || '';
-    const query = token ? `?token=${encodeURIComponent(token)}` : '';
-    return `/api/real-estate/documents/${documentId}/file${query}`;
-  },
-
-  async getCurrencies(): Promise<{ currencies: Array<{ code: string; name: string; symbol: string; is_popular?: boolean }>; total: number }> {
-    return apiClient.get('/api/real-estate/currencies');
-  },
-
-  async getPropertyInspections(propertyId: string): Promise<PropertyInspection[]> {
-    return apiClient.get<PropertyInspection[]>(`/api/real-estate/properties/${propertyId}/inspections`);
-  },
-
-  async updateInspectionFinding(
-    findingId: string,
-    payload: {
-      follow_up_status: string;
-      responsible_person?: string | null;
-      resolution_notes?: string | null;
-    }
-  ): Promise<PropertyInspectionFinding> {
-    return apiClient.patch<PropertyInspectionFinding>(`/api/real-estate/inspections/findings/${findingId}`, payload);
-  },
-
-  async getPropertyActivity(propertyId: string): Promise<PropertyActivityLog[]> {
-    return apiClient.get<PropertyActivityLog[]>(`/api/real-estate/properties/${propertyId}/activity`);
-  },
-
-  async getExtractionEngineStatus(): Promise<ExtractionEngineStatus> {
-    return apiClient.get<ExtractionEngineStatus>('/api/real-estate/extraction-engine-status');
-  },
-
-  async getAiModelsStatus(): Promise<{
-    active_provider: 'vllm' | 'gemini' | 'openai' | 'anthropic' | string;
-    active_model: string;
-    active_status: string;
-    providers: Record<
-      string,
-      {
-        name: string;
-        status: string;
-        configured_model: string;
-        available_models?: string[];
-        is_active: boolean;
-        has_api_key?: boolean;
-        notes?: string;
-      }
-    >;
-  }> {
-    return apiClient.get('/api/real-estate/ai-models/status');
-  },
-
-  async switchAiModel(provider: string, modelName?: string): Promise<any> {
-    return apiClient.post('/api/real-estate/ai-models/switch', {
-      provider,
-      model_name: modelName || undefined,
-    });
-  },
-
-  async enrichPropertyWithHomeHarvest(propertyId: string): Promise<{
-    enriched: boolean;
-    message?: string;
-    homeharvest_enrichment?: Record<string, any>;
-    property: Property;
-  }> {
-    return apiClient.post(`/api/real-estate/properties/${propertyId}/enrich-homeharvest`, {});
-  },
-
-  async getPropertyDuplicates(propertyId: string): Promise<PropertyDuplicatesResponse> {
-    return apiClient.get<PropertyDuplicatesResponse>(`/api/real-estate/properties/${propertyId}/duplicates`);
-  },
-
-  async mergeProperties(propertyId: string, payload: PropertyMergePayload): Promise<Property> {
-    return apiClient.post<Property>(`/api/real-estate/properties/${propertyId}/merge`, payload);
-  },
-
-  async deleteProperty(propertyId: string): Promise<void> {
-    return apiClient.delete(`/api/real-estate/properties/${propertyId}`);
-  },
-
-  // Lease payment schedule & payment tracking
-  async getLeasePayments(propertyId: string): Promise<LeasePaymentsResponse> {
-    return apiClient.get<LeasePaymentsResponse>(`/api/real-estate/properties/${propertyId}/lease-payments`);
-  },
-
-  async getLeasePaymentTerms(propertyId: string): Promise<LeasePaymentTerms[]> {
-    return apiClient.get<LeasePaymentTerms[]>(`/api/real-estate/properties/${propertyId}/lease-payment-terms`);
-  },
-
-  async confirmLeasePaymentTerms(leaseId: string): Promise<{ confirmed: boolean }> {
-    return apiClient.post<{ confirmed: boolean }>(`/api/real-estate/agreements/${leaseId}/confirm-payment-terms`, {});
-  },
-
-  async generateLeasePaymentSchedule(leaseId: string): Promise<GenerateScheduleResult> {
-    return apiClient.post<GenerateScheduleResult>(`/api/real-estate/agreements/${leaseId}/payment-schedule`, {});
-  },
-
-  async getScheduledChargeDetail(obligationId: string): Promise<ChargeDetail> {
-    return apiClient.get<ChargeDetail>(`/api/real-estate/payment-schedule/${obligationId}`);
-  },
-
-  async recordLeasePayment(payload: LeasePaymentPayload): Promise<{ payment_id: string; allocated_charges: number }> {
-    return apiClient.post<{ payment_id: string; allocated_charges: number }>('/api/real-estate/lease-payments', payload);
+  async deleteDocument(propertyId: string, documentId: string): Promise<void> {
+    return apiClient.delete<void>(`/api/real-estate/properties/${propertyId}/documents/${documentId}`);
   },
 };

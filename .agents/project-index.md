@@ -8,23 +8,29 @@ For detailed function and route definitions, see `.agents/code-map.md`.
 - scripts/reload-android.js (82 lines) - reload android
 - scripts/start-android.js (195 lines) - Check ANDROID_HOME or ANDROID_SDK_ROOT environment variables first
 - src/App.native.tsx (81 lines) - app.native
-- src/App.tsx (285 lines) - app
+- src/App.tsx (264 lines) - app
 - src/components/AppShell/AppShell.tsx (51 lines) - Set initial state
-- src/components/AppShell/Breadcrumbs.tsx (143 lines) - breadcrumbs (components  app shell)
+- src/components/AppShell/Breadcrumbs.tsx (141 lines) - breadcrumbs (components  app shell)
 - src/components/AppShell/ConnectionStatusLight.tsx (256 lines) - connection status light (components  app shell)
-- src/components/AppShell/Navigation.tsx (68 lines) - navigation (components  app shell)
-- src/components/AppShell/NotificationDropdown.tsx (421 lines) - notification dropdown (components  app shell)
+- src/components/AppShell/MessageHubStatusDropdown.tsx (572 lines) - message hub status dropdown (components  app shell)
+- src/components/AppShell/Navigation.tsx (66 lines) - navigation (components  app shell)
+- src/components/AppShell/NotificationDropdown.tsx (187 lines) - notification dropdown (components  app shell)
 - src/components/AppShell/Sidebar.tsx (298 lines) - sidebar (components  app shell)
 - src/components/AppShell/ThemeSwitch.tsx (41 lines) - theme switch (components  app shell)
-- src/components/AppShell/TopBar.tsx (697 lines) - top bar (components  app shell)
-- src/components/RealEstate/PropertyDetailMap.tsx (510 lines) - Fallback coordinate mappings matching Dashboard RealtorLocationMapExplorer
-- src/components/RealEstate/PropertyMergeModal.tsx (393 lines) - property merge modal (components  real estate)
-- src/components/RealEstate/RealtorLocationMapExplorer.tsx (831 lines) - realtor location map explorer (components  real estate)
+- src/components/AppShell/TopBar.tsx (545 lines) - top bar (components  app shell)
+- src/components/Dashboard/PropertyMap.tsx (351 lines) - The custom pin: a teardrop in the status colour with a building inside.
+- src/components/RealEstate/ManagementResearchPanel.tsx (95 lines) - The outcome of the dedicated building-management research: one row per field, then what was actually searched.
+- src/components/RealEstate/PropertyDocuments.tsx (202 lines) - Mirrors the server's rules (property_document_service.py); the server checks again.
+- src/components/RealEstate/PropertyForm.tsx (304 lines) - One badge per item.
+- src/components/RealEstate/PropertyTypeAutocomplete.tsx (116 lines) - Used until the list loads, or if it cannot be loaded.
+- src/components/RealEstate/ResearchFieldMeta.tsx (112 lines) - research field meta (components  real estate)
+- src/components/RealEstate/ResearchProgressPanel.tsx (111 lines) - research progress panel (components  real estate)
 - src/components/common/ErrorBoundary.tsx (48 lines) - error boundary (components common)
 - src/components/common/GlobalLoadingScreen.tsx (106 lines) - global loading screen (components common)
+- src/components/common/PageKit.tsx (85 lines) - Class for any surface card, for places that need the look without the component.
 - src/components/common/ProtectedRoute.tsx (69 lines) - protected route (components common)
 - src/components/native/index.tsx (596 lines) - RN's built-in SafeAreaView is deprecated; the community package is the replacement.
-- src/components/ui/CurrencyAutocomplete.tsx (305 lines) - currency autocomplete (components ui)
+- src/components/ui/CurrencyAutocomplete.tsx (293 lines) - currency autocomplete (components ui)
 - src/components/ui/FloatingVerticalFilter.tsx (290 lines) - floating vertical filter (components ui)
 - src/components/ui/HelpIcon.tsx (30 lines) - help icon (components ui)
 - src/components/ui/PageConnectionBanner.tsx (65 lines) - page connection banner (components ui)
@@ -60,10 +66,10 @@ For detailed function and route definitions, see `.agents/code-map.md`.
 - src/components/ui/toggle-group.tsx (90 lines) - toggle group (components ui)
 - src/components/ui/toggle.tsx (46 lines) - toggle (components ui)
 - src/components/ui/tooltip.tsx (56 lines) - tooltip (components ui)
-- src/data/portfolioData.ts (934 lines) - portfolio data (data)
 - src/hooks/useHeartbeat.ts (45 lines) - Track user activity
 - src/hooks/useNotifications.ts (147 lines) - use notifications (hooks)
 - src/lib/AuthContext.tsx (212 lines) - auth context (lib)
+- src/lib/ResearchTasksContext.tsx (110 lines) - Address shown in the progress panel.
 - src/lib/codegenShim.ts (4 lines) - codegen shim (lib)
 - src/lib/env.ts (56 lines) - Universal environment variable reader for Vite and Metro / React Native
 - src/lib/exportUtils.ts (54 lines) - export utils (lib)
@@ -75,51 +81,32 @@ For detailed function and route definitions, see `.agents/code-map.md`.
 - src/pages/Auth/Login.tsx (150 lines) - login (pages  auth)
 - src/pages/Auth/PendingAccess.native.tsx (129 lines) - pending access.native (pages  auth)
 - src/pages/Auth/PendingAccess.tsx (62 lines) - If user somehow gets another role, maybe redirect them to home
-- src/pages/Configurations/RoleApiPermissions.tsx (411 lines) - We order actions so they appear logically: CREATE, READ (VIEW), UPDATE, DELETE
-- src/pages/Configurations/RoleGroupPermissions.tsx (488 lines) - role group permissions (pages  configurations)
-- src/pages/Configurations/RoleMcpToolPermissions.tsx (306 lines) - Left panel search
+- src/pages/Configurations/RoleApiPermissions.tsx (412 lines) - We order actions so they appear logically: CREATE, READ (VIEW), UPDATE, DELETE
+- src/pages/Configurations/RoleGroupPermissions.tsx (484 lines) - role group permissions (pages  configurations)
+- src/pages/Configurations/RoleMcpToolPermissions.tsx (307 lines) - Left panel search
 - src/pages/Configurations/Roles.tsx (799 lines) - roles (pages  configurations)
-- src/pages/Configurations/UserRoleAssignment.tsx (387 lines) - user role assignment (pages  configurations)
-- src/pages/Configurations/Users.tsx (692 lines) - users (pages  configurations)
+- src/pages/Configurations/UserRoleAssignment.tsx (388 lines) - user role assignment (pages  configurations)
+- src/pages/Configurations/Users.tsx (690 lines) - users (pages  configurations)
 - src/pages/Dashboard/Dashboard.native.tsx (258 lines) - dashboard.native (pages  dashboard)
-- src/pages/Dashboard/Dashboard.tsx (626 lines) - dashboard (pages  dashboard)
-- src/pages/Logs/AuditLog.tsx (482 lines) - audit log (pages  logs)
-- src/pages/Logs/SystemLogsPage.tsx (1065 lines) - system logs page (pages  logs)
-- src/pages/RealEstate/AddPropertyDocumentModal.tsx (2548 lines) - add property document modal (pages  real estate)
-- src/pages/RealEstate/BookingsPage.tsx (838 lines) - bookings page (pages  real estate)
-- src/pages/RealEstate/DocumentReviewModal.tsx (1381 lines) - document review modal (pages  real estate)
-- src/pages/RealEstate/PaymentsPage.tsx (893 lines) - payments page (pages  real estate)
-- src/pages/RealEstate/PortfolioMapView.tsx (305 lines) - portfolio map view (pages  real estate)
-- src/pages/RealEstate/PortfolioPage.tsx (591 lines) - portfolio page (pages  real estate)
-- src/pages/RealEstate/PropertiesPage.tsx (2980 lines) - properties page (pages  real estate)
-- src/pages/RealEstate/SpreadsheetImportModal.tsx (512 lines) - spreadsheet import modal (pages  real estate)
-- src/pages/RealEstate/StayCalendarView.tsx (1158 lines) - stay calendar view (pages  real estate)
-- src/pages/RealEstate/register/AgreementDialogs.tsx (637 lines) - Server message first (validation errors are actionable), then the generic error text.
-- src/pages/RealEstate/register/AgreementsTab.tsx (390 lines) - agreements tab (pages  real estate register)
-- src/pages/RealEstate/register/ExtractedRegisterPreview.tsx (415 lines) - extracted register preview (pages  real estate register)
-- src/pages/RealEstate/register/FinancialsTab.tsx (159 lines) - Obligation status is computed from payments, exactly as the accounting endpoints do.
-- src/pages/RealEstate/register/LeasePaymentsTab.tsx (508 lines) - lease payments tab (pages  real estate register)
-- src/pages/RealEstate/register/LocationPhysicalPanel.tsx (151 lines) - location physical panel (pages  real estate register)
-- src/pages/RealEstate/register/OperationsTabs.tsx (282 lines) - Appends the edit/delete column for managers.
-- src/pages/RealEstate/register/OwnershipAcquisitionPanel.tsx (122 lines) - ownership acquisition panel (pages  real estate register)
-- src/pages/RealEstate/register/PropertyWarningsBanner.tsx (107 lines) - Which detail tab explains a warning.
-- src/pages/RealEstate/register/RegisterEntityDialog.tsx (232 lines) - register entity dialog (pages  real estate register)
-- src/pages/RealEstate/register/RegisterOverviewStrip.tsx (85 lines) - The agreement that currently governs occupancy: the ACTIVE one that ends last.
-- src/pages/RealEstate/register/RegisterRowActions.tsx (31 lines) - register row actions (pages  real estate register)
-- src/pages/RealEstate/register/registerEntityConfigs.ts (202 lines) - Initial value when creating (selects default to the backend default).
-- src/pages/RealEstate/register/registerUi.tsx (199 lines) - register ui (pages  real estate register)
-- src/pages/RealEstate/register/useRegisterEntityEditor.tsx (39 lines) - State for the create/edit and delete dialogs of a panel; render `dialogs` once anywhere in the panel.
+- src/pages/Dashboard/Dashboard.tsx (300 lines) - The map library is large, so it loads only when the dashboard is opened.
+- src/pages/Logs/AuditLog.tsx (480 lines) - audit log (pages  logs)
+- src/pages/Logs/SystemLogsPage.tsx (1005 lines) - system logs page (pages  logs)
+- src/pages/RealEstate/BookingsPage.tsx (851 lines) - bookings page (pages  real estate)
+- src/pages/RealEstate/CreatePropertyDialog.tsx (574 lines) - create property dialog (pages  real estate)
+- src/pages/RealEstate/PropertiesPage.tsx (518 lines) - properties page (pages  real estate)
+- src/pages/RealEstate/StayCalendarView.tsx (1146 lines) - stay calendar view (pages  real estate)
 - src/services/api.ts (6 lines) - api (services)
-- src/services/apiClient.ts (335 lines) - api client (services)
+- src/services/apiClient.ts (352 lines) - api client (services)
+- src/services/bookingService.ts (84 lines) - Units & Availability
 - src/services/errorReporting.ts (75 lines) - error reporting (services)
 - src/services/helper.ts (17 lines) - helper (services)
 - src/services/queryKeys.ts (25 lines) - Centralized React Query keys for consistent invalidation and caching.
-- src/services/realEstateService.ts (563 lines) - real estate service (services)
+- src/services/realEstateService.ts (84 lines) - real estate service (services)
 - src/types/aiAssistant.ts (5 lines) - ai assistant (types)
 - src/types/auth.ts (98 lines) - auth (types)
-- src/types/leasePayments.ts (131 lines) - lease payments (types)
+- src/types/bookings.ts (107 lines) - Stays & Availability types
 - src/types/notifications.ts (16 lines) - notifications (types)
-- src/types/realEstate.ts (1231 lines) - real estate (types)
+- src/types/realEstate.ts (243 lines) - Property record: identity, address, details and management fields (see backend models/real_estate/real_estate_model.py).
 - src/types/search.ts (8 lines) - search (types)
 - src/utils/compressAttachment.ts (78 lines) - Safely compresses image attachments before upload.
 - src/utils/dateUtils.ts (86 lines) - Utility functions for normalizing and formatting dates across real estate documents and forms.

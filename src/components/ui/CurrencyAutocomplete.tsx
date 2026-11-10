@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, ChevronsUpDown, Search, Coins, Sparkles } from 'lucide-react';
-import { realEstateService } from '@/services/realEstateService';
 
 export interface CurrencyItem {
   code: string;
@@ -72,18 +70,8 @@ export function CurrencyAutocomplete({
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  const { data: currenciesData, isLoading } = useQuery({
-    queryKey: ['real-estate-currencies'],
-    queryFn: () => realEstateService.getCurrencies().catch(() => ({ currencies: DEFAULT_CURRENCIES, total: DEFAULT_CURRENCIES.length })),
-    staleTime: 1000 * 60 * 60,
-  });
-
-  const currencies: CurrencyItem[] = useMemo(() => {
-    if (currenciesData?.currencies && currenciesData.currencies.length > 0) {
-      return currenciesData.currencies;
-    }
-    return DEFAULT_CURRENCIES;
-  }, [currenciesData]);
+  const isLoading = false;
+  const currencies: CurrencyItem[] = DEFAULT_CURRENCIES;
 
   const currentCode = (value || 'USD').toUpperCase();
 

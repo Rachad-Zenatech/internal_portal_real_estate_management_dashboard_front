@@ -18,7 +18,7 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `NavigationContent` (function)
 - `App` (export function)
 
-## src/App.tsx (285 lines) - app
+## src/App.tsx (264 lines) - app
 - `NotFoundAlert` (function)
 - `App` (function)
 
@@ -26,7 +26,7 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `Props` (interface)
 - `AppShell` (export function)
 
-## src/components/AppShell/Breadcrumbs.tsx (143 lines) - breadcrumbs (components  app shell)
+## src/components/AppShell/Breadcrumbs.tsx (141 lines) - breadcrumbs (components  app shell)
 - `BreadcrumbItem` (export interface)
 - `Breadcrumbs` (export function)
 
@@ -35,26 +35,32 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `IntegrationStatusResponse` (export interface)
 - `ConnectionStatusLight` (export function)
 
-## src/components/AppShell/Navigation.tsx (68 lines) - navigation (components  app shell)
+## src/components/AppShell/MessageHubStatusDropdown.tsx (572 lines) - message hub status dropdown (components  app shell)
+- `HubQueueOrStreamItem` (export interface)
+- `HubChannelGroupStatus` (export interface)
+- `HubConnectedServer` (export interface)
+- `MessageHubStatusResponse` (export interface)
+- `forceServerOffline` (function)
+- `buildOfflineServer` (function)
+    - `q` (fn)
+- `buildAllOfflineFallback` (function)
+- `fetchWithTimeout` (function)
+- `MessageHubStatusDropdown` (export function)
+    - `queryClient` (fn)
+    - `handleActiveTest` (fn)
+    - `getStatusDot` (fn)
+    - `getServerBadge` (fn)
+    - `formatLastSeen` (fn)
+    - `renderMetric` (fn)
+
+## src/components/AppShell/Navigation.tsx (66 lines) - navigation (components  app shell)
 - `NavigationSubItem` (export interface)
 - `NavigationItem` (export interface)
 - `navigation` (export const)
 
-## src/components/AppShell/NotificationDropdown.tsx (421 lines) - notification dropdown (components  app shell)
+## src/components/AppShell/NotificationDropdown.tsx (187 lines) - notification dropdown (components  app shell)
 - `formatRelativeTime` (function)
 - `NotificationDropdownContent` (export function)
-    - `navigate` (fn)
-    - `activeExtractionJobs` (fn)
-    - `allReviewExtractionJobs` (fn)
-    - `reviewExtractionJobs` (fn)
-    - `queryClient` (fn)
-    - `clearAllReadyMutation` (fn)
-    - `dismissSingleJobMutation` (fn)
-    - `markAsReadMutation` (fn)
-    - `markAllAsReadMutation` (fn)
-    - `clearAllMutation` (fn)
-    - `filteredNotifications` (fn)
-    - `handleNotificationClick` (fn)
 
 ## src/components/AppShell/Sidebar.tsx (298 lines) - sidebar (components  app shell)
 - `SidebarProps` (interface)
@@ -63,45 +69,70 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 ## src/components/AppShell/ThemeSwitch.tsx (41 lines) - theme switch (components  app shell)
 - `ThemeSwitch` (export function)
 
-## src/components/AppShell/TopBar.tsx (697 lines) - top bar (components  app shell)
+## src/components/AppShell/TopBar.tsx (545 lines) - top bar (components  app shell)
 - `TopBarClock` (function)
 - `sendWindowsNotification` (function)
 - `TopBar` (export function)
     - `handleToggleWindowsNotifications` (fn)
     - `handleTestWindowsNotification` (fn)
     - `navigate` (fn)
-    - `readyExtractionJobs` (fn)
     - `queryClient` (fn)
-    - `clearExtractionJobsMutation` (fn)
 
-## src/components/RealEstate/PropertyDetailMap.tsx (510 lines) - Fallback coordinate mappings matching Dashboard RealtorLocationMapExplorer
-- `getCategoryInfo` (function)
-    - `cat` (fn)
-- `PropertyDetailMapProps` (interface)
-- `PropertyDetailMap` (export function)
-    - `isOwned` (fn)
-    - `handleRecenter` (fn)
-    - `handleCopyCoords` (fn)
+## src/components/Dashboard/PropertyMap.tsx (351 lines) - The custom pin: a teardrop in the status colour with a building inside.
+- `STATUS_COLORS` (export const)
+- `statusOf` (const)
+- `pinSvg` (const) - The custom pin: a teardrop in the status colour with a building inside.
+- `addPinImages` (function)
+- `PointProps` (interface)
+- `toCollection` (function)
+- `popupContent` (function)
+- `PropertyMapProps` (interface)
+- `PropertyMap` (export function)
 
-## src/components/RealEstate/PropertyMergeModal.tsx (393 lines) - property merge modal (components  real estate)
-- `PropertyMergeModalProps` (interface)
-- `PropertyMergeModal` (export const)
+## src/components/RealEstate/ManagementResearchPanel.tsx (95 lines) - The outcome of the dedicated building-management research: one row per field, then what was actually searched.
+- `ManagementResearchPanel` (export function) - The outcome of the dedicated building-management research: one row per field, then what was actually searched.
 
-## src/components/RealEstate/RealtorLocationMapExplorer.tsx (831 lines) - realtor location map explorer (components  real estate)
-- `getPropertyThumbnail` (function)
-    - `category` (fn)
-- `getCoords` (function)
-- `getCategoryColor` (function)
-- `RealtorLocationMapExplorerProps` (interface)
-- `RealtorLocationMapExplorer` (export function)
-    - `navigate` (fn)
-    - `effectiveProperties` (fn) - Use live properties if returned, or fallback to complete 42 global properties dataset
-    - `filteredProperties` (fn) - Filter properties
-    - `hasInitializedRef` (fn) - Set initial selected property quietly on first load without auto-opening the card
-    - `handleSelectProperty` (fn)
-    - `handleResetToWorldView` (fn)
-    - `copyToClipboard` (fn)
-    - `openGoogleMaps` (fn)
+## src/components/RealEstate/PropertyDocuments.tsx (202 lines) - Mirrors the server's rules (property_document_service.py); the server checks again.
+- `ext` (const)
+- `isImage` (const)
+- `isPdf` (const)
+- `isText` (const)
+- `canPreview` (const)
+- `formatBytes` (function)
+- `DocIcon` (function)
+- `base` (const)
+- `PropertyDocuments` (export function) - Documents of one property: a drag-and-drop upload area, the list, and preview / download / delete.
+- `PreviewDialog` (function)
+
+## src/components/RealEstate/PropertyForm.tsx (304 lines) - One badge per item.
+- `TagList` (function) - One badge per item.
+- `FieldKind` (type)
+- `FieldDef` (interface)
+- `SectionDef` (interface)
+- `opts` (const)
+- `AREA_UNITS` (export const)
+- `PROPERTY_SECTIONS` (export const)
+- `missingRequired` (export function) - Required fields a person has to fill in.
+- `defaultPropertyName` (export function) - A starting name for a new property: the building (with the unit), else the street address (with the unit).
+- `PropertyFormProps` (interface)
+- `PropertyForm` (export function)
+
+## src/components/RealEstate/PropertyTypeAutocomplete.tsx (116 lines) - Used until the list loads, or if it cannot be loaded.
+- `Props` (interface)
+- `PropertyTypeAutocomplete` (export function) - Free-text input with a suggestion dropdown: pick a common type or keep typing a custom one.
+
+## src/components/RealEstate/ResearchFieldMeta.tsx (112 lines) - research field meta (components  real estate)
+- `host` (const)
+- `day` (const)
+- `formatClaimValue` (export function)
+- `SourceLink` (function)
+- `Props` (interface)
+- `ResearchFieldMeta` (export function) - Status, source and conflicts for one researched field, shown under the form field.
+
+## src/components/RealEstate/ResearchProgressPanel.tsx (111 lines) - research progress panel (components  real estate)
+- `elapsed` (const)
+- `TaskCard` (function)
+- `ResearchProgressPanel` (export function) - Small progress cards in the bottom-right corner.
 
 ## src/components/common/ErrorBoundary.tsx (48 lines) - error boundary (components common)
 - `Props` (interface)
@@ -110,6 +141,12 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 
 ## src/components/common/GlobalLoadingScreen.tsx (106 lines) - global loading screen (components common)
 - `GlobalLoadingScreen` (export function)
+
+## src/components/common/PageKit.tsx (85 lines) - Class for any surface card, for places that need the look without the component.
+- `surfaceClass` (export const) - Class for any surface card, for places that need the look without the component.
+- `PageHeader` (export function)
+- `StatCard` (export function)
+- `SectionCard` (export function)
 
 ## src/components/common/ProtectedRoute.tsx (69 lines) - protected route (components common)
 - `ProtectedRouteProps` (interface)
@@ -145,7 +182,7 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `NativeTableHead` (export function)
 - `NativeTableCell` (export function)
 
-## src/components/ui/CurrencyAutocomplete.tsx (305 lines) - currency autocomplete (components ui)
+## src/components/ui/CurrencyAutocomplete.tsx (293 lines) - currency autocomplete (components ui)
 - `CurrencyItem` (export interface)
 - `DEFAULT_CURRENCIES` (export const)
 - `CurrencyAutocompleteProps` (interface)
@@ -377,9 +414,6 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `TooltipTrigger` (function)
 - `TooltipContent` (function)
 
-## src/data/portfolioData.ts (934 lines) - portfolio data (data)
-- `FALLBACK_PORTFOLIO_PROPERTIES` (export const)
-
 ## src/hooks/useHeartbeat.ts (45 lines) - Track user activity
 - `useHeartbeat` (export function)
 
@@ -401,6 +435,15 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `AuthContext` (const)
 - `AuthProvider` (export function)
 - `useAuth` (export function)
+
+## src/lib/ResearchTasksContext.tsx (110 lines) - Address shown in the progress panel.
+- `ResearchTaskStatus` (export type)
+- `ResearchTask` (export interface)
+- `ResearchTasksValue` (interface)
+- `ResearchTasksContext` (const)
+- `finalStatus` (const)
+- `ResearchTasksProvider` (export function) - Keeps research jobs running and visible while the user works elsewhere, so closing the dialog does not stop them.
+- `useResearchTasks` (export function)
 
 ## src/lib/codegenShim.ts (4 lines) - codegen shim (lib)
 - `codegenNativeComponent` (export function)
@@ -441,7 +484,7 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 ## src/pages/Auth/PendingAccess.tsx (62 lines) - If user somehow gets another role, maybe redirect them to home
 - `PendingAccess` (export function)
 
-## src/pages/Configurations/RoleApiPermissions.tsx (411 lines) - We order actions so they appear logically: CREATE, READ (VIEW), UPDATE, DELETE
+## src/pages/Configurations/RoleApiPermissions.tsx (412 lines) - We order actions so they appear logically: CREATE, READ (VIEW), UPDATE, DELETE
 - `isActionSupported` (const)
 - `RoleApiPermissions` (export function)
     - `queryClient` (fn)
@@ -454,7 +497,7 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
     - `togglePermission` (fn)
     - `handleRoleSelect` (fn)
 
-## src/pages/Configurations/RoleGroupPermissions.tsx (488 lines) - role group permissions (pages  configurations)
+## src/pages/Configurations/RoleGroupPermissions.tsx (484 lines) - role group permissions (pages  configurations)
 - `PermissionGroup` (type)
 - `PermissionModule` (type)
 - `getErrorMessage` (function)
@@ -472,7 +515,7 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
     - `handleRoleSelect` (fn)
     - `filteredModules` (fn) - Filter modules/groups by permission search
 
-## src/pages/Configurations/RoleMcpToolPermissions.tsx (306 lines) - Left panel search
+## src/pages/Configurations/RoleMcpToolPermissions.tsx (307 lines) - Left panel search
 - `RoleMcpToolPermissions` (export function)
 
 ## src/pages/Configurations/Roles.tsx (799 lines) - roles (pages  configurations)
@@ -503,12 +546,12 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
     - `canDrop` (fn)
     - `handleMoveRole` (fn)
 
-## src/pages/Configurations/UserRoleAssignment.tsx (387 lines) - user role assignment (pages  configurations)
+## src/pages/Configurations/UserRoleAssignment.tsx (388 lines) - user role assignment (pages  configurations)
 - `UserRoleAssignment` (export function)
 - `SelectableTreeNode` (const) - Recursive component for Tree Node in UserRoleAssignment
 - `RoleTree` (function) - Tree Diagram Component
 
-## src/pages/Configurations/Users.tsx (692 lines) - users (pages  configurations)
+## src/pages/Configurations/Users.tsx (690 lines) - users (pages  configurations)
 - `Users` (export function)
     - `queryClient` (fn)
     - `navigate` (fn)
@@ -527,21 +570,22 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 ## src/pages/Dashboard/Dashboard.native.tsx (258 lines) - dashboard.native (pages  dashboard)
 - `Dashboard` (export function)
 
-## src/pages/Dashboard/Dashboard.tsx (626 lines) - dashboard (pages  dashboard)
-- `getRegionAndFlag` (function) - Helper to map country to Region & Flag
+## src/pages/Dashboard/Dashboard.tsx (300 lines) - The map library is large, so it loads only when the dashboard is opened.
+- `statusOf` (const)
+- `hasLocation` (const)
+- `greeting` (const)
+- `countryName` (const)
+- `tally` (function)
+- `BarList` (function)
 - `Dashboard` (export function)
-    - `navigate` (fn)
-    - `maProperties` (fn)
-    - `regionalCities` (fn) - Dynamically compute regional city groupings from real properties
-    - `handleExportPortfolioExcel` (fn) - 1-Click Executive Excel Export for Pat & Vanessa
 
-## src/pages/Logs/AuditLog.tsx (482 lines) - audit log (pages  logs)
+## src/pages/Logs/AuditLog.tsx (480 lines) - audit log (pages  logs)
 - `AuditLog` (export function)
     - `getActionBadgeColor` (fn)
     - `auditTable` (fn)
     - `loginTable` (fn)
 
-## src/pages/Logs/SystemLogsPage.tsx (1065 lines) - system logs page (pages  logs)
+## src/pages/Logs/SystemLogsPage.tsx (1005 lines) - system logs page (pages  logs)
 - `AuditLogItem` (interface)
 - `getActionMeta` (export function) - Helper to format human-readable action details
     - `act` (fn)
@@ -555,65 +599,12 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
     - `handleCopyJson` (fn)
     - `stats` (fn) - KPI Calculations
 
-## src/pages/RealEstate/AddPropertyDocumentModal.tsx (2548 lines) - add property document modal (pages  real estate)
-- `DocumentCandidate` (export interface)
-- `FieldConflict` (export interface)
-- `ExtractedPropertyRecord` (export interface)
-- `AddPropertyDocumentModalProps` (interface)
-- `getFieldValue` (function)
-- `getSqftValue` (function)
-- `normalizeAddress` (function)
-- `getCoreAddressWithoutDirectional` (function)
-- `normalizeUnitNumber` (function)
-- `splitAddressAndUnit` (function)
-- `areSameBuildingAddress` (function)
-    - `cityA` (fn)
-    - `cityB` (fn)
-- `registerItemMatchesRecord` (function) - Does an extracted register item (agreement, insurance policy, ...) belong to this property record? Mirrors the backend:  an item with no ...
-    - `addr` (fn)
-    - `unit` (fn)
-- `RegisterTabPreview` (function) - The register data of a record's documents, limited to what one dialog tab shows.
-- `areSamePropertyAndUnit` (function)
-    - `cP1` (fn) - 1.
-    - `cP2` (fn)
-- `cleanBuildingNameCandidate` (function)
-- `extractBuildingName` (function)
-- `inferOwnershipTypeFromJobAndProp` (function)
-- `extractFieldValueFromJob` (function)
-- `computeConflictsForRecord` (function)
-- `groupJobsIntoPropertyRecords` (export function)
-- `RecordStatus` (type) - ---------------------------------------------------------------------------
-- `getRecordStatus` (function)
-- `OwnershipBadge` (function)
-- `FormField` (function)
-- `SectionCard` (function)
-- `AddPropertyDocumentModal` (export function)
-    - `queryClient` (fn)
-    - `handleAiProviderSwitch` (fn)
-    - `activeRecord` (fn) - Active property record currently being viewed/edited in right panel
-    - `selectedCount` (fn)
-    - `handleDragOver` (fn) - Handle Drag & Drop
-    - `handleDragLeave` (fn)
-    - `handleDrop` (fn)
-    - `handleFileSelect` (fn)
-    - `addFiles` (fn)
-    - `removeFile` (fn)
-    - `extractMutation` (fn) - Upload and Extract Mutation - Runs entirely in the background
-    - `updateActiveRecordField` (fn) - Update a field on the currently active property record
-    - `handleTakeConflictValue` (fn) - User chooses a specific document's candidate value for a conflicting field
-    - `toggleRecordSelection` (fn) - Toggle whether an extracted property record should be included when confirming
-    - `setAllRecordsSelection` (fn) - Select/Deselect all records
-    - `saveSinglePropertyRecord` (fn) - Helper to save a single record
-    - `handleSaveIndividualProperty` (fn) - Save an individual record (one by one)
-    - `confirmMutation` (fn) - Confirm and Save Mutation (supports saving selected or all properties at once)
-    - `resetAll` (fn)
-    - `handleModalClose` (fn)
-    - `activeConflicts` (fn)
-    - `uniqueDocCount` (fn)
-
-## src/pages/RealEstate/BookingsPage.tsx (838 lines) - bookings page (pages  real estate)
+## src/pages/RealEstate/BookingsPage.tsx (851 lines) - bookings page (pages  real estate)
 - `BookingsPage` (export function)
     - `queryClient` (fn)
+    - `propertyIds` (fn) - Rooms and stays always belong to a property that exists in the portfolio; anything else is left out.
+    - `units` (fn)
+    - `bookings` (fn)
     - `handleOpenBookingModal` (fn)
     - `handleSelectProperty` (fn)
     - `unitsForSelectedProperty` (fn) - Units belonging to the currently selected property
@@ -624,88 +615,51 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
     - `createBookingMutation` (fn) - Create Booking Mutation
     - `updateStatusMutation` (fn) - Update Booking Status Mutation
     - `getStatusBadge` (fn)
+    - `stats` (fn)
     - `stayNights` (fn)
 
-## src/pages/RealEstate/DocumentReviewModal.tsx (1381 lines) - document review modal (pages  real estate)
-- `DocumentReviewModalProps` (interface)
-- `DocumentReviewModal` (export function)
+## src/pages/RealEstate/CreatePropertyDialog.tsx (574 lines) - create property dialog (pages  real estate)
+- `CreatePropertyDialogProps` (interface)
+- `hasValue` (const)
+- `when` (const)
+- `host` (const)
+- `CreatePropertyDialog` (export function)
     - `queryClient` (fn)
-    - `handleAiProviderSwitch` (fn)
-    - `getVal` (fn)
-    - `getSqft` (fn)
-    - `highlightEvidence` (fn) - Jump to page and highlight evidence box
-    - `retryMutation` (fn) - Retry Mutation
-    - `confirmMutation` (fn) - Confirm Mutation
-    - `rawProps` (fn)
-- `FieldReviewItemProps` (interface) - ---------------------------------------------------------------------------
-- `FieldReviewItem` (function)
+    - `reset` (fn)
+    - `close` (fn)
+    - `applyResult` (fn) - Merges research into the form without touching anything the user has edited.
+    - `research` (fn)
+    - `providerStatus` (fn)
+    - `buildRequest` (fn)
+    - `startResearch` (fn)
+    - `pick` (fn) - Find property details, after they have had the chance to enter a unit number.
+    - `onKeyDown` (fn)
+    - `onFormChange` (fn)
+    - `useAlternative` (fn)
+    - `save` (fn)
+    - `trySave` (fn)
 
-## src/pages/RealEstate/PaymentsPage.tsx (893 lines) - payments page (pages  real estate)
-- `PaymentsPage` (export function)
-    - `queryClient` (fn)
-    - `generateRentMutation` (fn) - Generate Rent Mutation
-    - `markPaidMutation` (fn) - Record/Verify Payment Mutation
-    - `createObligationMutation` (fn) - Create Obligation Mutation
-    - `overdueList` (fn)
-    - `filteredObligations` (fn)
-    - `getStatusBadge` (fn)
-    - `getObligationLabel` (fn)
-
-## src/pages/RealEstate/PortfolioMapView.tsx (305 lines) - portfolio map view (pages  real estate)
-- `PortfolioMapViewProps` (interface)
-- `PortfolioMapView` (export function)
-
-## src/pages/RealEstate/PortfolioPage.tsx (591 lines) - portfolio page (pages  real estate)
-- `PortfolioPage` (export function)
+## src/pages/RealEstate/PropertiesPage.tsx (518 lines) - properties page (pages  real estate)
+- `cap` (const)
+- `statusTone` (function)
+- `StatusBadge` (function)
+- `formatArea` (function)
+- `PropertyStats` (function)
+    - `baths` (fn)
+- `PropertyList` (function)
     - `navigate` (fn)
-    - `uniqueOwners` (fn) - Unique Filter Options
-    - `uniqueCountries` (fn)
-    - `uniqueCities` (fn)
-    - `filteredProperties` (fn) - Filtered Properties for Views
-    - `handleOpenPropertyDetail` (fn)
-    - `handleOpenReview` (fn)
-
-## src/pages/RealEstate/PropertiesPage.tsx (2980 lines) - properties page (pages  real estate)
-- `optionalNumber` (const)
-- `buildCreatePayload` (function) - Builds the create payload: one measurement unit for every area, normalized square feet for each area  (the API stores them as sent), and ...
-    - `toSqft` (fn)
-- `formatHHFieldValue` (function)
-- `pick` (function) - First value that is actually present (not null / empty / zero).
-- `money` (const)
-- `withUnit` (const)
-- `Fact` (function) - Label above a value; shows "—" when there is no value and a small "public records" note when the value was filled from them.
-- `SectionCard` (function)
-- `toList` (const)
-- `PublicRecordsPanel` (function) - Everything found online for the property's address (HomeHarvest 0.8.18 + county assessor data), grouped by topic.
-    - `hh` (fn)
-    - `header` (fn)
-- `DetailTab` (function)
-- `CountBadge` (function)
-- `TabGroup` (function)
+    - `changeView` (fn)
+    - `counts` (fn)
+- `changedFields` (function)
+- `PropertyDetail` (function)
+    - `navigate` (fn)
+    - `queryClient` (fn)
+    - `save` (fn)
+    - `remove` (fn)
+    - `diff` (fn)
 - `PropertiesPage` (export function)
-    - `navigate` (fn)
-    - `queryClient` (fn)
-    - `hh` (fn) - Public-records values used to fill details the documents did not state
-    - `handleOpenDetail` (fn)
-    - `handleBackToList` (fn)
-    - `createPropMutation` (fn)
-    - `createUnitMutation` (fn)
-    - `verifyMutation` (fn)
-    - `updateFindingMutation` (fn)
-    - `enrichMutation` (fn)
-    - `archiveMutation` (fn)
-    - `deletePropMutation` (fn)
-    - `uploadDocMutation` (fn)
 
-## src/pages/RealEstate/SpreadsheetImportModal.tsx (512 lines) - spreadsheet import modal (pages  real estate)
-- `SpreadsheetImportModalProps` (interface)
-- `SpreadsheetImportModal` (export function)
-    - `handleFileUpload` (fn) - Parse Excel or CSV
-    - `handleExecuteImport` (fn) - Submit Bulk Import
-    - `handleRemoveRow` (fn) - Remove single row from preview
-    - `handleDownloadTemplate` (fn) - Download Sample Template for Vanessa
-
-## src/pages/RealEstate/StayCalendarView.tsx (1158 lines) - stay calendar view (pages  real estate)
+## src/pages/RealEstate/StayCalendarView.tsx (1146 lines) - stay calendar view (pages  real estate)
 - `StayStatusBucket` (export type)
 - `DUE_WINDOW_DAYS` (export const)
 - `STATUS_LABEL` (export const)
@@ -732,164 +686,10 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
     - `handleNext` (fn)
     - `handleToday` (fn)
 
-## src/pages/RealEstate/register/AgreementDialogs.tsx (637 lines) - Server message first (validation errors are actionable), then the generic error text.
-- `apiErrorMessage` (export function) - Server message first (validation errors are actionable), then the generic error text.
-- `useInvalidateProperty` (function)
-    - `queryClient` (fn)
-- `FieldType` (type) - ---------------------------------------------------------------------------------------------------------------------
-- `FieldDef` (interface)
-- `opt` (const)
-- `toFormValue` (function)
-- `buildAgreementPayload` (function) - Create: only what was filled in.
-    - `current` (fn)
-- `FieldInput` (function)
-    - `label` (fn)
-- `AgreementFormDialog` (export function)
-    - `invalidate` (fn)
-    - `mutation` (fn)
-- `AmendmentDialog` (export function)
-    - `invalidate` (fn)
-    - `mutation` (fn)
-- `MaxTermReviewDialog` (export function) - ---------------------------------------------------------------------------------------------------------------------
-    - `invalidate` (fn)
-    - `mutation` (fn)
-- `AGREEMENT_STATUS_TRANSITIONS` (export const) - ---------------------------------------------------------------------------------------------------------------------
-- `AgreementStatusDialog` (export function)
-    - `invalidate` (fn)
-    - `mutation` (fn)
-- `DeleteAgreementDialog` (export function)
-    - `invalidate` (fn)
-    - `mutation` (fn)
-
-## src/pages/RealEstate/register/AgreementsTab.tsx (390 lines) - agreements tab (pages  real estate register)
-- `describeChange` (function)
-- `amendmentColumns` (function)
-- `MaxTermAlert` (function)
-- `AgreementCard` (function)
-- `AgreementsTab` (export function)
-
-## src/pages/RealEstate/register/ExtractedRegisterPreview.tsx (415 lines) - extracted register preview (pages  real estate register)
-- `EvidenceMark` (function) - ✓ when the supporting quote was found in the document, ⚠ when it was not; nothing when the model gave no quote.
-- `DateField` (function)
-- `ConfidenceBadges` (function)
-- `AgreementPreview` (function)
-    - `parties` (fn)
-    - `derived` (fn)
-- `FeeRow` (type)
-- `Line` (function)
-- `Group` (function)
-- `RegisterGroup` (export type)
-- `RegisterOfOneDocument` (function)
-    - `shows` (fn)
-    - `keep` (fn)
-- `RegisterPreviewJob` (export interface)
-- `ExtractedRegisterPreview` (export function) - Everything the register pass found in the documents of one property record.
-- `plural` (function)
-- `RegisterApplyResultPanel` (export function) - What saving the documents wrote to the property, plus anything that needs a person's attention.
-
-## src/pages/RealEstate/register/FinancialsTab.tsx (159 lines) - Obligation status is computed from payments, exactly as the accounting endpoints do.
-- `obligationStatus` (function) - Obligation status is computed from payments, exactly as the accounting endpoints do.
-- `obligationColumns` (function)
-- `FinancialsTab` (export function)
-
-## src/pages/RealEstate/register/LeasePaymentsTab.tsx (508 lines) - lease payments tab (pages  real estate register)
-- `periodLabel` (function)
-- `Amounts` (function)
-- `SummaryCard` (function)
-- `TermsPanel` (function)
-    - `queryClient` (fn)
-    - `refresh` (fn)
-    - `confirm` (fn)
-    - `generate` (fn)
-- `ChargeSheet` (function)
-- `RecordPaymentDialog` (function)
-    - `queryClient` (fn)
-    - `openRows` (fn)
-    - `currencies` (fn)
-    - `save` (fn)
-- `LeasePaymentsTab` (export function)
-    - `payments` (fn)
-    - `terms` (fn)
-    - `rows` (fn)
-    - `visible` (fn)
-
-## src/pages/RealEstate/register/LocationPhysicalPanel.tsx (151 lines) - location physical panel (pages  real estate register)
-- `areaLine` (function)
-- `legacyAddress` (function)
-- `LocationPhysicalPanel` (export function)
-
-## src/pages/RealEstate/register/OperationsTabs.tsx (282 lines) - Appends the edit/delete column for managers.
-- `Editor` (type)
-- `withActions` (function) - Appends the edit/delete column for managers.
-- `workOrderColumns` (function)
-- `insuranceColumns` (function)
-- `IssueAction` (type)
-- `IssueNotesDialog` (function) - Resolve / dismiss need notes: the backend refuses to close an issue without them.
-- `MaintenanceAssetsTab` (export function)
-- `UtilitiesInsuranceTab` (export function)
-- `ComplianceTab` (export function)
-
-## src/pages/RealEstate/register/OwnershipAcquisitionPanel.tsx (122 lines) - ownership acquisition panel (pages  real estate register)
-- `acquisitionColumns` (function)
-- `OwnershipAcquisitionPanel` (export function)
-
-## src/pages/RealEstate/register/PropertyWarningsBanner.tsx (107 lines) - Which detail tab explains a warning.
-- `SeverityIcon` (function)
-- `tabForWarning` (export function) - Which detail tab explains a warning.
-- `PropertyWarningsBanner` (export function)
-
-## src/pages/RealEstate/register/RegisterEntityDialog.tsx (232 lines) - register entity dialog (pages  real estate register)
-- `Row` (type)
-- `initialValue` (function)
-- `errorText` (function)
-- `RegisterEntityDialog` (export function) - Create/edit dialog for one register record.
-- `ConfirmDeleteDialog` (export function) - Confirmation before a record is deleted (soft delete: it stays in the history).
-
-## src/pages/RealEstate/register/RegisterOverviewStrip.tsx (85 lines) - The agreement that currently governs occupancy: the ACTIVE one that ends last.
-- `currentAgreement` (export function) - The agreement that currently governs occupancy: the ACTIVE one that ends last.
-- `nextDeadline` (function)
-- `RegisterOverviewStrip` (export function)
-
-## src/pages/RealEstate/register/RegisterRowActions.tsx (31 lines) - register row actions (pages  real estate register)
-- `RegisterRowActions` (export function)
-- `RegisterAddButton` (export function)
-
-## src/pages/RealEstate/register/registerEntityConfigs.ts (202 lines) - Initial value when creating (selects default to the backend default).
-- `RegisterFieldType` (export type)
-- `RegisterFieldConfig` (export interface)
-- `RegisterEntityConfig` (export interface)
-- `opts` (const)
-- `REGISTER_ENTITY_CONFIGS` (export const)
-
-## src/pages/RealEstate/register/registerUi.tsx (199 lines) - register ui (pages  real estate register)
-- `EMPTY` (export const)
-- `humanize` (export function)
-- `fmtDate` (export function)
-- `fmtDateTime` (export function)
-- `fmtMoney` (export function)
-- `fmtNumber` (export function)
-- `fmtTriState` (export function) - Booleans that may be unknown: null means the agreement/record does not state it.
-- `Tone` (type)
-- `toneFor` (function)
-- `StatusBadge` (export function)
-- `Field` (export function)
-- `FieldGrid` (export function)
-- `Section` (export function)
-- `EmptyState` (export function)
-- `RestrictedNotice` (export function)
-- `TableColumn` (export interface)
-- `SimpleTable` (export function)
-
-## src/pages/RealEstate/register/useRegisterEntityEditor.tsx (39 lines) - State for the create/edit and delete dialogs of a panel; render `dialogs` once anywhere in the panel.
-- `Row` (type)
-- `Editing` (type)
-- `Deleting` (type)
-- `useRegisterEntityEditor` (export function) - State for the create/edit and delete dialogs of a panel; render `dialogs` once anywhere in the panel.
-
 ## src/services/api.ts (6 lines) - api (services)
 - `getAnnualReport` (export function)
 
-## src/services/apiClient.ts (335 lines) - api client (services)
+## src/services/apiClient.ts (352 lines) - api client (services)
 - `ActiveApiAction` (export interface)
 - `subscribeToApiActions` (export function)
 - `notifyActionListeners` (function)
@@ -899,6 +699,9 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `getAuthHeaders` (const)
 - `monitoredFetch` (function)
 - `apiClient` (export const)
+
+## src/services/bookingService.ts (84 lines) - Units & Availability
+- `bookingService` (export const)
 
 ## src/services/errorReporting.ts (75 lines) - error reporting (services)
 - `ClientErrorType` (export type)
@@ -915,7 +718,8 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 ## src/services/queryKeys.ts (25 lines) - Centralized React Query keys for consistent invalidation and caching.
 - `queryKeys` (export const)
 
-## src/services/realEstateService.ts (563 lines) - real estate service (services)
+## src/services/realEstateService.ts (84 lines) - real estate service (services)
+- `PropertyListParams` (export interface)
 - `realEstateService` (export const)
 
 ## src/types/aiAssistant.ts (5 lines) - ai assistant (types)
@@ -932,89 +736,40 @@ How to use: check `.agents/project-index.md` first to locate the file, then insp
 - `AuditLogItem` (export interface)
 - `LoginActivityItem` (export interface)
 
-## src/types/leasePayments.ts (131 lines) - lease payments (types)
-- `ChargeStatus` (export type)
-- `LeasePaymentRow` (export interface)
-- `CurrencyAmount` (export interface)
-- `LeasePaymentsResponse` (export interface)
-- `TermEvidence` (export interface)
-- `ScheduleGap` (export interface)
-- `LeasePaymentTerms` (export interface)
-- `GenerateScheduleResult` (export interface)
-- `ChargeDetail` (export interface)
-- `LeasePaymentPayload` (export interface)
+## src/types/bookings.ts (107 lines) - Stays & Availability types
+- `Unit` (export interface) - Stays & Availability types
+- `MaintenanceBlock` (export interface)
+- `Stay` (export interface)
+- `StayCreateRequest` (export interface)
+- `formatUnitLabel` (export function) - Unit 2605" for a bare number, and a label that already says what it is ("Unit 1", "Suite 4B", "#12") is left alone.
 
 ## src/types/notifications.ts (16 lines) - notifications (types)
 - `Notification` (export interface)
 - `UnreadNotificationCount` (export interface)
 
-## src/types/realEstate.ts (1231 lines) - real estate (types)
-- `PropertyCategory` (export type)
-- `formatPropertyCategory` (export function)
-- `OwnershipType` (export type)
-- `InventoryVerificationStatus` (export type)
-- `TaxResponsibility` (export type)
-- `Location` (export interface)
-- `HomeHarvestPropertySchema` (export interface)
-- `Property` (export interface)
-- `Unit` (export interface)
-- `MaintenanceBlock` (export interface)
-- `Lease` (export interface)
-- `LeaseVersion` (export interface)
-- `LeaseExtractionJob` (export interface)
-- `PropertyDocument` (export interface)
-- `Stay` (export interface)
-- `StayCreateRequest` (export interface)
-- `PropertyPayment` (export interface)
-- `PropertyObligation` (export interface)
-- `CurrencyFinancialBucket` (export interface)
-- `AccountingSummary` (export interface)
-- `CriticalDateItem` (export interface)
-- `RealEstateSummary` (export interface)
-- `SpreadsheetRowImport` (export interface)
-- `BulkImportPayload` (export interface)
-- `BulkImportResponse` (export interface)
-- `ExtractedFieldEvidence` (export interface)
-- `AddressCandidateRole` (export type)
-- `AddressCandidate` (export interface)
-- `SelectedPropertyResolution` (export interface)
-- `AddressReviewMetadata` (export interface)
-- `PropertyExtractionJob` (export interface)
-- `PropertyInspectionFinding` (export interface)
-- `PropertyInspection` (export interface)
-- `PropertyActivityLog` (export interface)
-- `ExtractionEngineStatus` (export interface)
-- `DuplicatePropertyDiff` (export interface)
-- `DuplicateMatchItem` (export interface)
-- `PropertyDuplicatesResponse` (export interface)
-- `PropertyMergePayload` (export interface)
+## src/types/realEstate.ts (243 lines) - Property record: identity, address, details and management fields (see backend models/real_estate/real_estate_model.py).
+- `HoldingType` (export type)
+- `RecordStatus` (export type)
+- `FurnishedStatus` (export type)
 - `OccupancyStatus` (export type)
-- `TenureType` (export type)
-- `RegisterWarningSeverity` (export type)
-- `MaxTermReviewStatus` (export type)
-- `PropertyTenure` (export interface)
-- `PropertyAddressRecord` (export interface)
-- `PropertyOwnership` (export interface)
-- `PropertyAcquisition` (export interface)
-- `AgreementPartyRecord` (export interface)
-- `AgreementAmendment` (export interface)
-- `PropertyAgreement` (export interface) - A row of the `leases` table viewed as a property agreement (lease, sublease, lease-to-own, ...).
-- `RecurringObligation` (export interface)
-- `RegisterPayment` (export interface)
-- `PropertyAsset` (export interface)
-- `PropertyWorkOrder` (export interface)
-- `PropertyUtility` (export interface)
-- `PropertyInsurancePolicy` (export interface)
-- `PropertyComplianceItem` (export interface)
-- `ComplianceIssue` (export interface)
-- `RegisterWarning` (export interface)
-- `RegisterEntityKey` (export type) - Entities managed through POST /properties/{id}/{key}, PUT /{key}/{recordId}, DELETE /{key}/{recordId}.
-- `ExtractedRegisterItem` (export interface) - One extracted item (agreement, ownership, ...) as returned in job.raw_extracted_data.register.
-- `ExtractedRegisterWarning` (export interface)
-- `ExtractedRegister` (export interface) - Register data the second AI pass extracted from one document (normalized and quote-verified by the backend).
-- `RegisterApplyResult` (export interface) - What confirming a document actually wrote (job.user_corrected_data.register_result).
-- `Party` (export interface)
-- `PropertyRegister` (export interface)
+- `AreaUnit` (export type)
+- `PropertyFields` (export interface)
+- `Property` (export interface)
+- `PropertyInput` (export type) - Fields sent when creating or editing a property.
+- `AddressSuggestion` (export interface)
+- `ResearchStatus` (export type)
+- `ClaimStatus` (export type)
+- `ResearchClaim` (export interface)
+- `ResearchJobInfo` (export interface)
+- `ResearchStatusInfo` (export interface) - Whether web research can run right now, and what to fix if not.
+- `ManagementFieldName` (export type)
+- `ManagementFieldStatus` (export type)
+- `ManagementRejectionCategory` (export type)
+- `ManagementResearch` (export interface) - Outcome of the dedicated building-management research.
+- `ResearchResult` (export interface)
+- `ResearchRequest` (export interface)
+- `formatPropertyAddress` (export function) - The name to show for a property: its name, else its formatted address, else the address assembled from its parts.
+- `PropertyDocument` (export interface) - A file attached to a property (the bytes are fetched separately, for preview or download).
 
 ## src/types/search.ts (8 lines) - search (types)
 - `SearchResult` (export type)

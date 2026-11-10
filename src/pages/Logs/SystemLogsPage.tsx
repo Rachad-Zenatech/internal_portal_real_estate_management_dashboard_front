@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageHeader, StatCard, surfaceClass } from "@/components/common/PageKit";
 import { apiClient as api } from "@/services/apiClient";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -353,96 +354,35 @@ export default function SystemLogsPage() {
   }, [logs, total]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col space-y-6 pb-6 p-4 sm:p-6 w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/50 shadow-2xs">
-              <Activity className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
-                System Audit Logs
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                Comprehensive, tamper-evident audit trail of all actions, approvals, payments, and system events.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
+    <div className="flex-1 min-h-0 flex flex-col gap-6 pb-12 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title="System Audit Logs"
+        description="Comprehensive, tamper-evident audit trail of all actions, approvals, payments, and system events."
+        actions={
           <Button
             variant="outline"
             size="sm"
             onClick={fetchLogs}
             disabled={loading}
-            className="h-9 gap-1.5 bg-white dark:bg-zinc-950 shadow-2xs font-medium text-xs sm:text-sm"
+            className="h-9 gap-1.5 bg-background/70 backdrop-blur font-medium text-xs sm:text-sm"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-indigo-600" : ""}`} />
             Refresh
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── KPI Metric Summary Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Events</span>
-            <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
-              <Layers className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100 mt-2">
-            {stats.totalCount.toLocaleString()}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1">Recorded across all modules</p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Today's Activity</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-              <Sparkles className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">
-            {stats.todayCount}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1">Actions executed today</p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Entities</span>
-            <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400">
-              <FileText className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100 mt-2">
-            {stats.uniqueEntities}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1">Unique records in current view</p>
-        </div>
-
-        <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Active Actors</span>
-            <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-              <UserIcon className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100 mt-2">
-            {stats.uniqueUsers}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1">Unique operators & systems</p>
-        </div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard icon={<Layers className="h-5 w-5" />} label="Total Events" value={stats.totalCount.toLocaleString()} hint="Recorded across all modules" tone="bg-slate-500" />
+        <StatCard icon={<Sparkles className="h-5 w-5" />} label="Today's Activity" value={stats.todayCount} hint="Actions executed today" tone="bg-emerald-500" />
+        <StatCard icon={<FileText className="h-5 w-5" />} label="Active Entities" value={stats.uniqueEntities} hint="Unique records in current view" tone="bg-sky-500" />
+        <StatCard icon={<UserIcon className="h-5 w-5" />} label="Active Actors" value={stats.uniqueUsers} hint="Unique operators & systems" tone="bg-indigo-500" />
       </div>
 
       {/* ── Search & Filter Control Bar ── */}
-      <div className="p-3.5 sm:p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xs space-y-3">
+      <div className="p-3.5 sm:p-4 rounded-2xl border border-border/60 bg-card shadow-sm space-y-3">
         <div className="flex flex-col md:flex-row gap-3">
           {/* Search Box */}
           <div className="relative flex-1">
@@ -451,7 +391,7 @@ export default function SystemLogsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by user name, email, request title, action, or record ID..."
-              className="pl-9 h-10 text-xs sm:text-sm bg-slate-50/50 dark:bg-zinc-900/50"
+              className="pl-9 h-10 text-xs sm:text-sm bg-muted/40"
             />
             {search && (
               <button
@@ -472,7 +412,7 @@ export default function SystemLogsPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="h-10 text-xs sm:text-sm bg-slate-50/50 dark:bg-zinc-900/50 font-medium">
+              <SelectTrigger className="h-10 text-xs sm:text-sm bg-muted/40 font-medium">
                 <div className="flex items-center gap-1.5 truncate">
                   <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="text-muted-foreground mr-1">Entity:</span>
@@ -498,7 +438,7 @@ export default function SystemLogsPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="h-10 text-xs sm:text-sm bg-slate-50/50 dark:bg-zinc-900/50 font-medium">
+              <SelectTrigger className="h-10 text-xs sm:text-sm bg-muted/40 font-medium">
                 <div className="flex items-center gap-1.5 truncate">
                   <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="text-muted-foreground mr-1">Action:</span>
@@ -528,7 +468,7 @@ export default function SystemLogsPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="h-10 text-xs sm:text-sm bg-slate-50/50 dark:bg-zinc-900/50 font-medium">
+              <SelectTrigger className="h-10 text-xs sm:text-sm bg-muted/40 font-medium">
                 <div className="flex items-center gap-1.5 truncate">
                   <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <SelectValue />
@@ -546,7 +486,7 @@ export default function SystemLogsPage() {
       </div>
 
       {/* ── Main Audit Logs Table ── */}
-      <div className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xs overflow-hidden flex flex-col flex-1 min-h-[400px]">
+      <div className={`${surfaceClass} overflow-hidden flex flex-col flex-1 min-h-[400px]`}>
         <div className="overflow-x-auto flex-1">
           <Table>
             <TableHeader className="bg-slate-50/70 dark:bg-zinc-900/50 border-b border-slate-200 dark:border-zinc-800">

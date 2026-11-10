@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageHeader, surfaceClass } from "@/components/common/PageKit";
 import HelpIcon from "@/components/ui/HelpIcon";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/services/apiClient";
@@ -93,12 +94,18 @@ export default function UserRoleAssignment() {
   const isSuperAdmin = selectedUser?.is_super_admin === true;
   const activeRoles = allRoles?.filter(r => r.is_active && r.code !== 'PENDING_USER') || [];
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out pb-4 w-full">
+    <div className="w-full flex-1 min-h-0 flex flex-col gap-6 pb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <PageHeader
+        compact
+        title={<span className="flex items-center gap-2">Role Assignment<HelpIcon text="Assign custom roles to specific portal users to control their system access." /></span>}
+        description={selectedUser ? `Configuring permissions for ${selectedUser.full_name || selectedUser.email}` : "Select a user from the list to begin."}
+      />
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
       {/* Left Panel: Users List */}
-      <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 lg:border-r border-slate-200 dark:border-zinc-800 lg:pr-6 pb-6 lg:pb-0 border-b lg:border-b-0 min-h-0">
+      <div className={`${surfaceClass} w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 p-4 min-h-0`}>
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">Users</h2>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">Select a user to configure access.</p>
+          <h2 className="text-sm font-semibold">Users</h2>
+          <p className="text-xs text-muted-foreground">Select a user to configure access.</p>
         </div>
         
         <div className="relative">
@@ -141,16 +148,9 @@ export default function UserRoleAssignment() {
       </div>
 
       {/* Right Panel: Role Assignment */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <div>
-          <div className="flex items-center gap-2"><h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">Role Assignment</h2><HelpIcon text="Assign custom roles to specific portal users to control their system access." /></div>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">
-            {selectedUser ? `Configuring permissions for ${selectedUser.full_name || selectedUser.email}` : "Select a user from the list to begin."}
-          </p>
-        </div>
-
+      <div className={`${surfaceClass} flex-1 flex flex-col min-h-0 p-5`}>
         {selectedUserId ? (
-          <div className="flex-1 min-h-0 flex flex-col mt-6 gap-4 relative">
+          <div className="flex-1 min-h-0 flex flex-col gap-4 relative">
             {isSuperAdmin && (
               <div className="p-4 rounded-xl bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 text-sm flex items-center mb-2">
                 <span className="font-semibold mr-2">Note:</span> This user is a Super Admin and inherently has all permissions. Role assignments are visual only.
@@ -187,7 +187,7 @@ export default function UserRoleAssignment() {
               </div>
 
               {/* Tree Diagram Rendering */}
-              <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-zinc-900/30 border border-slate-200 dark:border-zinc-800 rounded-xl p-6 relative flex flex-col items-start min-h-[300px]">
+              <div className="flex-1 overflow-y-auto bg-muted/30 border border-border/60 rounded-xl p-6 relative flex flex-col items-start min-h-[300px]">
                 <RoleTree roles={activeRoles} selectedRoleId={selectedRoleId} setRole={setRole} />
               </div>
 
@@ -206,7 +206,7 @@ export default function UserRoleAssignment() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 min-h-0 flex items-center justify-center mt-6">
+          <div className="flex-1 min-h-0 flex items-center justify-center">
              <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl bg-slate-50 dark:bg-zinc-900/20 text-center max-w-md mx-auto">
                <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
                  <Check className="h-8 w-8 text-slate-300 dark:text-zinc-600" />
@@ -216,6 +216,7 @@ export default function UserRoleAssignment() {
              </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
