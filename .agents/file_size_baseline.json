@@ -1,0 +1,45 @@
+{
+  "limit": 500,
+  "files": {
+    "src/components/AppShell/MessageHubStatusDropdown.tsx": {
+      "max_lines": 571,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/components/AppShell/TopBar.tsx": {
+      "max_lines": 544,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/components/native/index.tsx": {
+      "max_lines": 595,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/pages/Configurations/Roles.tsx": {
+      "max_lines": 798,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/pages/Configurations/Users.tsx": {
+      "max_lines": 689,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/pages/Logs/SystemLogsPage.tsx": {
+      "max_lines": 1004,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/pages/RealEstate/BookingsPage.tsx": {
+      "max_lines": 850,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/pages/RealEstate/CreatePropertyDialog.tsx": {
+      "max_lines": 573,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/pages/RealEstate/PropertiesPage.tsx": {
+      "max_lines": 517,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    },
+    "src/pages/RealEstate/StayCalendarView.tsx": {
+      "max_lines": 1145,
+      "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    }
+  }
+}

@@ -15,7 +15,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "web": "vite",
-    "expo": "expo"
+    "expo": "expo",
+    "prepare": "node -e \"try{require('child_process').execSync('git config core.hooksPath .githooks',{stdio:'ignore'})}catch(e){}\""
   },
   "dependencies": {
     "@expo/metro-runtime": "^57.0.11",
