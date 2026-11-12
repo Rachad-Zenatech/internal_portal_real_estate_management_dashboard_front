@@ -1,5 +1,9 @@
 {
   "limit": 500,
+  "block_limits": {
+    "jsx_return": 80,
+    "py_function": 120
+  },
   "files": {
     "src/components/AppShell/MessageHubStatusDropdown.tsx": {
       "max_lines": 571,
@@ -40,6 +44,116 @@
     "src/pages/RealEstate/StayCalendarView.tsx": {
       "max_lines": 1145,
       "reason": "Over the limit when the check was introduced; split it when you next work on it."
+    }
+  },
+  "blocks": {
+    "src/App.tsx#App": {
+      "max_lines": 213,
+      "kind": "jsx_return"
+    },
+    "src/components/AppShell/ConnectionStatusLight.tsx#ConnectionStatusLight": {
+      "max_lines": 93,
+      "kind": "jsx_return"
+    },
+    "src/components/AppShell/MessageHubStatusDropdown.tsx#MessageHubStatusDropdown": {
+      "max_lines": 155,
+      "kind": "jsx_return"
+    },
+    "src/components/AppShell/NotificationDropdown.tsx#NotificationDropdownContent": {
+      "max_lines": 115,
+      "kind": "jsx_return"
+    },
+    "src/components/AppShell/Sidebar.tsx#Icon": {
+      "max_lines": 91,
+      "kind": "jsx_return"
+    },
+    "src/components/AppShell/Sidebar.tsx#Sidebar": {
+      "max_lines": 213,
+      "kind": "jsx_return"
+    },
+    "src/components/AppShell/TopBar.tsx#TopBar": {
+      "max_lines": 277,
+      "kind": "jsx_return"
+    },
+    "src/components/ui/calendar.tsx#Calendar": {
+      "max_lines": 151,
+      "kind": "jsx_return"
+    },
+    "src/components/ui/CurrencyAutocomplete.tsx#CurrencyAutocomplete": {
+      "max_lines": 148,
+      "kind": "jsx_return"
+    },
+    "src/components/ui/FloatingVerticalFilter.tsx#FloatingVerticalFilter": {
+      "max_lines": 121,
+      "kind": "jsx_return"
+    },
+    "src/pages/Configurations/RoleApiPermissions.tsx#RoleApiPermissions": {
+      "max_lines": 173,
+      "kind": "jsx_return"
+    },
+    "src/pages/Configurations/RoleGroupPermissions.tsx#RoleGroupPermissions": {
+      "max_lines": 318,
+      "kind": "jsx_return"
+    },
+    "src/pages/Configurations/RoleMcpToolPermissions.tsx#RoleMcpToolPermissions": {
+      "max_lines": 158,
+      "kind": "jsx_return"
+    },
+    "src/pages/Configurations/Roles.tsx#Roles": {
+      "max_lines": 353,
+      "kind": "jsx_return"
+    },
+    "src/pages/Configurations/UserRoleAssignment.tsx#UserRoleAssignment": {
+      "max_lines": 127,
+      "kind": "jsx_return"
+    },
+    "src/pages/Configurations/Users.tsx#Users": {
+      "max_lines": 270,
+      "kind": "jsx_return"
+    },
+    "src/pages/Dashboard/Dashboard.native.tsx#Dashboard": {
+      "max_lines": 99,
+      "kind": "jsx_return"
+    },
+    "src/pages/Dashboard/Dashboard.tsx#Dashboard": {
+      "max_lines": 161,
+      "kind": "jsx_return"
+    },
+    "src/pages/Logs/AuditLog.tsx#AuditLog": {
+      "max_lines": 202,
+      "kind": "jsx_return"
+    },
+    "src/pages/Logs/SystemLogsPage.tsx#SystemLogsPage": {
+      "max_lines": 648,
+      "kind": "jsx_return"
+    },
+    "src/pages/RealEstate/BookingsPage.tsx#BookingsPage": {
+      "max_lines": 549,
+      "kind": "jsx_return"
+    },
+    "src/pages/RealEstate/CreatePropertyDialog.tsx#CreatePropertyDialog": {
+      "max_lines": 281,
+      "kind": "jsx_return"
+    },
+    "src/pages/RealEstate/PropertiesPage.tsx#PropertyDetail": {
+      "max_lines": 111,
+      "kind": "jsx_return"
+    },
+    "src/pages/RealEstate/PropertiesPage.tsx#PropertyList": {
+      "max_lines": 190,
+      "kind": "jsx_return"
+    },
+    "src/pages/RealEstate/StayCalendarView.tsx#FollowUpCalendarGrid": {
+      "max_lines": 121,
+      "kind": "jsx_return"
+    },
+    "src/pages/RealEstate/StayCalendarView.tsx#StayCalendarView": {
+      "max_lines": 437,
+      "kind": "jsx_return"
+    },
+    "src/pages/RealEstate/StayCalendarView.tsx#UnitTimelineGrid": {
+      "max_lines": 202,
+      "kind": "jsx_return"
     }
   }
 }
