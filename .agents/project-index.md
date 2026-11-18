@@ -96,7 +96,7 @@ For function and route definitions with their line numbers, grep `.agents/code-m
 - src/pages/RealEstate/PropertiesPage.tsx (518 lines) - properties page (pages  real estate)
 - src/pages/RealEstate/StayCalendarView.tsx (1146 lines) - stay calendar view (pages  real estate)
 - src/services/api.ts (6 lines) - api (services)
-- src/services/apiClient.ts (352 lines) - api client (services)
+- src/services/apiClient.ts (355 lines) - api client (services)
 - src/services/bookingService.ts (84 lines) - Units & Availability
 - src/services/errorReporting.ts (75 lines) - error reporting (services)
 - src/services/helper.ts (17 lines) - helper (services)
