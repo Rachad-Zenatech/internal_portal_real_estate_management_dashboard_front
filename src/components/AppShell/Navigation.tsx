@@ -36,6 +36,7 @@ export const navigation: NavigationItem[] = [
     subItems: [
       { label: "Properties", path: "/real-estate/properties", navigationCode: "REAL_ESTATE_PROPERTIES" },
       { label: "Stays & Availability", path: "/real-estate/stays", navigationCode: "REAL_ESTATE_BOOKINGS" },
+      { label: "Floor Map AI", path: "/real-estate/floor-map", navigationCode: "REAL_ESTATE_PROPERTIES" },
     ],
   },
   {
@@ -43,6 +44,7 @@ export const navigation: NavigationItem[] = [
     icon: ShieldCheck,
     section: "SECURITY & ACCESS",
     subItems: [
+      { label: "AI Status & Usage", path: "/configurations/ai-status", navigationCode: "SYSTEM_LOGS" },
       { label: "Users", path: "/configurations/users", navigationCode: "CONFIG_USERS" },
       { label: "Roles", path: "/configurations/roles", navigationCode: "CONFIG_ROLES" },
       { label: "Role Assignments", path: "/configurations/user-role-assignment", navigationCode: "CONFIG_USER_ROLE_ASSIGNMENT" },

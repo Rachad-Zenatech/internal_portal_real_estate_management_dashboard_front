@@ -7,11 +7,14 @@ import { ShieldAlert, ArrowLeft } from "lucide-react";
 import { Button } from "./components/ui/button";
 
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import { lazy } from "react";
+const AiStatusPage = lazy(() => import("./pages/Configurations/AiStatusPage"));
 
 const AppShell = lazy(() => import("./components/AppShell/AppShell"));
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const PropertiesPage = lazy(() => import("./pages/RealEstate/PropertiesPage"));
 const BookingsPage = lazy(() => import("./pages/RealEstate/BookingsPage"));
+const FloorMapPage = lazy(() => import("./pages/RealEstate/FloorMapPage"));
 
 const Users = lazy(() => import("./pages/Configurations/Users"));
 const Roles = lazy(() => import("./pages/Configurations/Roles"));
@@ -104,6 +107,14 @@ function App() {
                 element={
                   <ProtectedRoute navigationCode="REAL_ESTATE_BOOKINGS">
                     <BookingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/real-estate/floor-map"
+                element={
+                  <ProtectedRoute navigationCode="REAL_ESTATE_PROPERTIES">
+                    <FloorMapPage />
                   </ProtectedRoute>
                 }
               />
@@ -248,7 +259,8 @@ function App() {
               />
 
               {/* Catch-All / 404 Route */}
-              <Route path="*" element={<NotFoundAlert />} />
+                        <Route path="/configurations/ai-status" element={<AiStatusPage />} />
+          <Route path="*" element={<NotFoundAlert />} />
             </Route>
           </Routes>
         </Suspense>
