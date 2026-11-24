@@ -7,6 +7,20 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
 ## src/types/aiAssistant.ts (5 lines) - ai assistant (types)
 - `Message` (export type) L2
 
+## src/types/aiOverview.ts (152 lines) - ai overview (types)
+- `AiStateCode` (export type) L1
+- `AiFeatureCoreRef` (export interface) L3
+- `AiFeatureUsage24h` (export interface) L8
+- `AiOverviewFeature` (export interface) L17
+- `AiCoreStatus` (export interface) L45
+- `AiModelBreakdownRow` (export interface) L59
+- `AiStepBreakdownRow` (export interface) L72
+- `AiGuardBreakdownRow` (export interface) L81
+- `AiErrorsFilter` (export interface) L87
+- `AiErrorEntry` (export interface) L93
+- `AiErrorsResponse` (export interface) L108
+- `AiOverviewResponse` (export interface) L115
+
 ## src/types/auth.ts (98 lines) - auth (types)
 - `User` (export interface) L1
 - `Role` (export interface) L14
@@ -24,6 +38,13 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
 - `Stay` (export interface) L56
 - `StayCreateRequest` (export interface) L85
 - `formatUnitLabel` (export function) L102 - Unit 2605" for a bare number, and a label that already says what it is ("Unit 1", "Suite 4B", "#12") is left alone.
+
+## src/types/floorMap.ts (79 lines) - floor map (types)
+- `FloorMapRender` (export interface) L1
+- `FloorMapQuestion` (export interface) L16
+- `FloorMapAnalysis` (export interface) L24
+- `FloorMapDesignStrategy` (export interface) L52
+- `FloorMapProject` (export interface) L62
 
 ## src/types/notifications.ts (16 lines) - notifications (types)
 - `Notification` (export interface) L1

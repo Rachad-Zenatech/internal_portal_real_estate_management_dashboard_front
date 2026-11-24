@@ -44,6 +44,9 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
     - `save` (fn) L247
     - `trySave` (fn) L277
 
+## src/pages/RealEstate/FloorMapPage.tsx (78 lines) - floor map page (pages  real estate)
+- `FloorMapPage` (export function) L8
+
 ## src/pages/RealEstate/PropertiesPage.tsx (518 lines) - properties page (pages  real estate)
 - `cap` (const) L34
 - `statusTone` (function) L37

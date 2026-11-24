@@ -8,17 +8,22 @@ For function and route definitions with their line numbers, grep `.agents/code-m
 - scripts/reload-android.js (82 lines) - reload android
 - scripts/start-android.js (195 lines) - Check ANDROID_HOME or ANDROID_SDK_ROOT environment variables first
 - src/App.native.tsx (81 lines) - app.native
-- src/App.tsx (264 lines) - app
+- src/App.tsx (275 lines) - app
 - src/components/AppShell/AppShell.tsx (51 lines) - Set initial state
 - src/components/AppShell/Breadcrumbs.tsx (141 lines) - breadcrumbs (components  app shell)
 - src/components/AppShell/ConnectionStatusLight.tsx (256 lines) - connection status light (components  app shell)
 - src/components/AppShell/MessageHubStatusDropdown.tsx (572 lines) - message hub status dropdown (components  app shell)
-- src/components/AppShell/Navigation.tsx (66 lines) - navigation (components  app shell)
+- src/components/AppShell/Navigation.tsx (68 lines) - navigation (components  app shell)
 - src/components/AppShell/NotificationDropdown.tsx (187 lines) - notification dropdown (components  app shell)
 - src/components/AppShell/Sidebar.tsx (298 lines) - sidebar (components  app shell)
 - src/components/AppShell/ThemeSwitch.tsx (41 lines) - theme switch (components  app shell)
 - src/components/AppShell/TopBar.tsx (545 lines) - top bar (components  app shell)
 - src/components/Dashboard/PropertyMap.tsx (351 lines) - The custom pin: a teardrop in the status colour with a building inside.
+- src/components/FloorMap/AuthImage.tsx (55 lines) - auth image (components  floor map)
+- src/components/FloorMap/ProjectSidebar.tsx (101 lines) - project sidebar (components  floor map)
+- src/components/FloorMap/QuestionsAndDesignPanel.tsx (109 lines) - questions and design panel (components  floor map)
+- src/components/FloorMap/RenderWorkspacePanel.tsx (125 lines) - render workspace panel (components  floor map)
+- src/components/FloorMap/UploadAndAnalysisPanel.tsx (89 lines) - upload and analysis panel (components  floor map)
 - src/components/RealEstate/ManagementResearchPanel.tsx (95 lines) - The outcome of the dedicated building-management research: one row per field, then what was actually searched.
 - src/components/RealEstate/PropertyDocuments.tsx (202 lines) - Mirrors the server's rules (property_document_service.py); the server checks again.
 - src/components/RealEstate/PropertyForm.tsx (304 lines) - One badge per item.
@@ -66,6 +71,8 @@ For function and route definitions with their line numbers, grep `.agents/code-m
 - src/components/ui/toggle-group.tsx (90 lines) - toggle group (components ui)
 - src/components/ui/toggle.tsx (46 lines) - toggle (components ui)
 - src/components/ui/tooltip.tsx (56 lines) - tooltip (components ui)
+- src/hooks/useAiOverview.ts (16 lines) - use ai overview (hooks)
+- src/hooks/useFloorMap.ts (174 lines) - use floor map (hooks)
 - src/hooks/useHeartbeat.ts (45 lines) - Track user activity
 - src/hooks/useNotifications.ts (147 lines) - use notifications (hooks)
 - src/lib/AuthContext.tsx (212 lines) - auth context (lib)
@@ -81,30 +88,41 @@ For function and route definitions with their line numbers, grep `.agents/code-m
 - src/pages/Auth/Login.tsx (150 lines) - login (pages  auth)
 - src/pages/Auth/PendingAccess.native.tsx (129 lines) - pending access.native (pages  auth)
 - src/pages/Auth/PendingAccess.tsx (62 lines) - If user somehow gets another role, maybe redirect them to home
+- src/pages/Configurations/AiStatusPage.tsx (86 lines) - ai status page (pages  configurations)
 - src/pages/Configurations/RoleApiPermissions.tsx (412 lines) - We order actions so they appear logically: CREATE, READ (VIEW), UPDATE, DELETE
 - src/pages/Configurations/RoleGroupPermissions.tsx (484 lines) - role group permissions (pages  configurations)
 - src/pages/Configurations/RoleMcpToolPermissions.tsx (307 lines) - Left panel search
 - src/pages/Configurations/Roles.tsx (799 lines) - roles (pages  configurations)
 - src/pages/Configurations/UserRoleAssignment.tsx (388 lines) - user role assignment (pages  configurations)
 - src/pages/Configurations/Users.tsx (690 lines) - users (pages  configurations)
+- src/pages/Configurations/aiStatus/AiCoresGrid.tsx (78 lines) - ai cores grid (pages  configurations ai status)
+- src/pages/Configurations/aiStatus/AiErrorsDialog.tsx (110 lines) - ai errors dialog (pages  configurations ai status)
+- src/pages/Configurations/aiStatus/AiFeatureMatrix.tsx (203 lines) - ai feature matrix (pages  configurations ai status)
+- src/pages/Configurations/aiStatus/AiPipelineTelemetry.tsx (179 lines) - ai pipeline telemetry (pages  configurations ai status)
+- src/pages/Configurations/aiStatus/AiSummaryCards.tsx (140 lines) - ai summary cards (pages  configurations ai status)
+- src/pages/Configurations/aiStatus/statusStyles.ts (31 lines) - status styles (pages  configurations ai status)
 - src/pages/Dashboard/Dashboard.native.tsx (258 lines) - dashboard.native (pages  dashboard)
 - src/pages/Dashboard/Dashboard.tsx (300 lines) - The map library is large, so it loads only when the dashboard is opened.
 - src/pages/Logs/AuditLog.tsx (480 lines) - audit log (pages  logs)
 - src/pages/Logs/SystemLogsPage.tsx (1005 lines) - system logs page (pages  logs)
 - src/pages/RealEstate/BookingsPage.tsx (851 lines) - bookings page (pages  real estate)
 - src/pages/RealEstate/CreatePropertyDialog.tsx (574 lines) - create property dialog (pages  real estate)
+- src/pages/RealEstate/FloorMapPage.tsx (78 lines) - floor map page (pages  real estate)
 - src/pages/RealEstate/PropertiesPage.tsx (518 lines) - properties page (pages  real estate)
 - src/pages/RealEstate/StayCalendarView.tsx (1146 lines) - stay calendar view (pages  real estate)
 - src/services/api.ts (6 lines) - api (services)
 - src/services/apiClient.ts (355 lines) - api client (services)
 - src/services/bookingService.ts (84 lines) - Units & Availability
 - src/services/errorReporting.ts (75 lines) - error reporting (services)
+- src/services/floorMapService.ts (90 lines) - floor map service (services)
 - src/services/helper.ts (17 lines) - helper (services)
 - src/services/queryKeys.ts (25 lines) - Centralized React Query keys for consistent invalidation and caching.
 - src/services/realEstateService.ts (84 lines) - real estate service (services)
 - src/types/aiAssistant.ts (5 lines) - ai assistant (types)
+- src/types/aiOverview.ts (152 lines) - ai overview (types)
 - src/types/auth.ts (98 lines) - auth (types)
 - src/types/bookings.ts (107 lines) - Stays & Availability types
+- src/types/floorMap.ts (79 lines) - floor map (types)
 - src/types/notifications.ts (16 lines) - notifications (types)
 - src/types/realEstate.ts (243 lines) - Property record: identity, address, details and management fields (see backend models/real_estate/real_estate_model.py).
 - src/types/search.ts (8 lines) - search (types)
