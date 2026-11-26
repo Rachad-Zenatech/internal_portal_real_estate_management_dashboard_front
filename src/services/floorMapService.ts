@@ -5,6 +5,8 @@ import type {
   FloorMapProject,
   FloorMapQuestion,
   FloorMapRender,
+  FloorMapScene,
+  LayoutEvaluation,
 } from "../types/floorMap";
 
 const BASE = "/api/floor-map";
@@ -85,5 +87,41 @@ export const floorMapService = {
 
   deleteRender(renderId: string): Promise<void> {
     return apiClient.delete<void>(`${BASE}/renders/${renderId}`);
+  },
+
+  extractScene(
+    projectId: string,
+    payload: { width_m?: number; wall_height_m?: number } = {}
+  ): Promise<{ scene: FloorMapScene; evaluation: LayoutEvaluation }> {
+    return apiClient.post(`${BASE}/projects/${projectId}/scene/extract`, payload);
+  },
+
+  updateScene(
+    projectId: string,
+    scene: FloorMapScene
+  ): Promise<{ scene: FloorMapScene; evaluation: LayoutEvaluation }> {
+    return apiClient.patch(`${BASE}/projects/${projectId}/scene`, { scene });
+  },
+
+  evaluateScene(
+    projectId: string,
+    includeAiCritique = true
+  ): Promise<LayoutEvaluation> {
+    return apiClient.post(`${BASE}/projects/${projectId}/evaluate`, { include_ai_critique: includeAiCritique });
+  },
+
+  getPropertyFloorMap(propertyId: string): Promise<FloorMapProject | null> {
+    return apiClient.get<FloorMapProject | null>(`${BASE}/properties/${propertyId}`);
+  },
+
+  uploadPropertyFloorPlan(
+    propertyId: string,
+    file: File,
+    propertyName?: string
+  ): Promise<FloorMapProject> {
+    const form = new FormData();
+    form.append("file", file);
+    const qs = propertyName ? `?property_name=${encodeURIComponent(propertyName)}` : "";
+    return apiClient.post<FloorMapProject>(`${BASE}/properties/${propertyId}/upload${qs}`, form);
   },
 };

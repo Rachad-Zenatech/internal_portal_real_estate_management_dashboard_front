@@ -44,28 +44,25 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
     - `save` (fn) L247
     - `trySave` (fn) L277
 
-## src/pages/RealEstate/FloorMapPage.tsx (78 lines) - floor map page (pages  real estate)
-- `FloorMapPage` (export function) L8
-
-## src/pages/RealEstate/PropertiesPage.tsx (518 lines) - properties page (pages  real estate)
-- `cap` (const) L34
-- `statusTone` (function) L37
-- `StatusBadge` (function) L48
-- `formatArea` (function) L53
-- `PropertyStats` (function) L58
-    - `baths` (fn) L59
-- `PropertyList` (function) L73
-    - `navigate` (fn) L74
-    - `changeView` (fn) L111
-    - `counts` (fn) L124
-- `changedFields` (function) L331
-- `PropertyDetail` (function) L340
-    - `navigate` (fn) L341
-    - `queryClient` (fn) L342
-    - `save` (fn) L359
-    - `remove` (fn) L370
-    - `diff` (fn) L380
-- `PropertiesPage` (export function) L514
+## src/pages/RealEstate/PropertiesPage.tsx (515 lines) - properties page (pages  real estate)
+- `cap` (const) L36
+- `statusTone` (function) L39
+- `StatusBadge` (function) L50
+- `formatArea` (function) L55
+- `PropertyStats` (function) L60
+    - `baths` (fn) L61
+- `PropertyList` (function) L75
+    - `navigate` (fn) L76
+    - `changeView` (fn) L113
+    - `counts` (fn) L126
+- `changedFields` (function) L333
+- `PropertyDetail` (function) L342
+    - `navigate` (fn) L343
+    - `queryClient` (fn) L344
+    - `save` (fn) L361
+    - `remove` (fn) L372
+    - `diff` (fn) L382
+- `PropertiesPage` (export function) L511
 
 ## src/pages/RealEstate/StayCalendarView.tsx (1146 lines) - stay calendar view (pages  real estate)
 - `StayStatusBucket` (export type) L63

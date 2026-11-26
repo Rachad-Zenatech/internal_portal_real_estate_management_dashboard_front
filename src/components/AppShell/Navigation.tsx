@@ -36,7 +36,6 @@ export const navigation: NavigationItem[] = [
     subItems: [
       { label: "Properties", path: "/real-estate/properties", navigationCode: "REAL_ESTATE_PROPERTIES" },
       { label: "Stays & Availability", path: "/real-estate/stays", navigationCode: "REAL_ESTATE_BOOKINGS" },
-      { label: "Floor Map AI", path: "/real-estate/floor-map", navigationCode: "REAL_ESTATE_PROPERTIES" },
     ],
   },
   {

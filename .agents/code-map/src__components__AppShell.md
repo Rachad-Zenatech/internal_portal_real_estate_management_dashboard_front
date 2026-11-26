@@ -35,7 +35,7 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
     - `formatLastSeen` (fn) L366
     - `renderMetric` (fn) L388
 
-## src/components/AppShell/Navigation.tsx (68 lines) - navigation (components  app shell)
+## src/components/AppShell/Navigation.tsx (67 lines) - navigation (components  app shell)
 - `NavigationSubItem` (export interface) L9
 - `NavigationItem` (export interface) L15
 - `navigation` (export const) L24

@@ -8,18 +8,6 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
 - `AuthImageProps` (interface) L4
 - `AuthImage` (export function) L11
 
-## src/components/FloorMap/ProjectSidebar.tsx (101 lines) - project sidebar (components  floor map)
-- `ProjectSidebarProps` (interface) L6
-- `ProjectSidebar` (export function) L16
-
-## src/components/FloorMap/QuestionsAndDesignPanel.tsx (109 lines) - questions and design panel (components  floor map)
-- `QuestionsAndDesignPanelProps` (interface) L6
-- `QuestionsAndDesignPanel` (export function) L16
-
-## src/components/FloorMap/RenderWorkspacePanel.tsx (125 lines) - render workspace panel (components  floor map)
-- `RenderWorkspacePanelProps` (interface) L8
-- `RenderWorkspacePanel` (export function) L19
-
-## src/components/FloorMap/UploadAndAnalysisPanel.tsx (89 lines) - upload and analysis panel (components  floor map)
-- `UploadAndAnalysisPanelProps` (interface) L7
-- `UploadAndAnalysisPanel` (export function) L15
+## src/components/FloorMap/InteractiveFloorPlan3D.tsx (247 lines) - interactive floor plan3 d (components  floor map)
+- `InteractiveFloorPlan3DProps` (interface) L9
+- `InteractiveFloorPlan3D` (export function) L16

@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
     ],
+    optimizeDeps: {
+      exclude: ["maplibre-gl"],
+    },
     resolve: {
       tsconfigPaths: true,
       alias: [

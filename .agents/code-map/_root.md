@@ -4,4 +4,4 @@
 
 Each symbol shows its start line (`L<n>`); read from there to the next symbol's line, not the whole file.
 
-## vite.config.ts (65 lines) - vite.config
+## vite.config.ts (68 lines) - vite.config

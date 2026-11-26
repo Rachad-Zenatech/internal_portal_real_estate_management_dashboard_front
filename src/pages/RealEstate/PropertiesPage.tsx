@@ -19,6 +19,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageHeader, SectionCard, StatCard, surfaceClass } from '@/components/common/PageKit';
 import PropertyForm from '@/components/RealEstate/PropertyForm';
 import PropertyDocuments from '@/components/RealEstate/PropertyDocuments';
+import PropertyFloorPlanSection from '@/components/RealEstate/PropertyFloorPlanSection';
+import { CopyAddressButton } from '@/components/RealEstate/CopyAddressButton';
 import CreatePropertyDialog from './CreatePropertyDialog';
 import { useAuth } from '@/lib/AuthContext';
 import { useResearchTasks } from '@/lib/ResearchTasksContext';
@@ -293,7 +295,7 @@ function PropertyList() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <h2 className="text-sm font-semibold leading-snug group-hover:text-primary">{formatPropertyAddress(p)}</h2>
-                    <StatusBadge status={p.record_status} />
+                    <span className="flex items-center gap-1 shrink-0"><CopyAddressButton property={p} iconOnly /><StatusBadge status={p.record_status} /></span>
                   </div>
                   {place && <p className="mt-0.5 truncate text-xs text-muted-foreground">{place}</p>}
                 </div>
@@ -403,20 +405,15 @@ function PropertyDetail({ id }: { id: string }) {
       <Link to="/real-estate/properties" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />All properties
       </Link>
-
       <PageHeader
         compact
         eyebrow={place || 'Property'}
-        title={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>{address}</span>
-            <StatusBadge status={property.record_status} />
-          </span>
-        }
+        title={<span className="flex flex-wrap items-center gap-x-3 gap-y-1"><span>{address}</span><StatusBadge status={property.record_status} /></span>}
         description={
           <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <PropertyStats p={property} />
             <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline"><MapPin className="h-3.5 w-3.5" />Open in Maps</a>
+            <CopyAddressButton property={property} />
           </span>
         }
         actions={
@@ -475,8 +472,8 @@ function PropertyDetail({ id }: { id: string }) {
         )}
       </SectionCard>
 
+      <PropertyFloorPlanSection propertyId={id} propertyName={address} canEdit={canUpdate} />
       <PropertyDocuments propertyId={id} canEdit={canUpdate} />
-
       <PropertyForm value={draft ?? property} onChange={setDraft} disabled={!draft || save.isPending} />
 
       {draft && (

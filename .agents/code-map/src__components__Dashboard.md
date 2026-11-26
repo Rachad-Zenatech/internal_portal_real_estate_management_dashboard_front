@@ -4,13 +4,13 @@
 
 Each symbol shows its start line (`L<n>`); read from there to the next symbol's line, not the whole file.
 
-## src/components/Dashboard/PropertyMap.tsx (351 lines) - The custom pin: a teardrop in the status colour with a building inside.
-- `STATUS_COLORS` (export const) L16
-- `statusOf` (const) L17
-- `pinSvg` (const) L20 - The custom pin: a teardrop in the status colour with a building inside.
-- `addPinImages` (function) L33
-- `PointProps` (interface) L46
-- `toCollection` (function) L48
-- `popupContent` (function) L61
-- `PropertyMapProps` (interface) L96
-- `PropertyMap` (export function) L106
+## src/components/Dashboard/PropertyMap.tsx (354 lines) - The custom pin: a teardrop in the status colour with a building inside.
+- `STATUS_COLORS` (export const) L19
+- `statusOf` (const) L20
+- `pinSvg` (const) L23 - The custom pin: a teardrop in the status colour with a building inside.
+- `addPinImages` (function) L36
+- `PointProps` (interface) L49
+- `toCollection` (function) L51
+- `popupContent` (function) L64
+- `PropertyMapProps` (interface) L99
+- `PropertyMap` (export function) L109

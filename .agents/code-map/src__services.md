@@ -29,8 +29,8 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
 - `reportClientError` (export function) L33
 - `installGlobalErrorReporting` (export function) L67
 
-## src/services/floorMapService.ts (90 lines) - floor map service (services)
-- `floorMapService` (export const) L12
+## src/services/floorMapService.ts (128 lines) - floor map service (services)
+- `floorMapService` (export const) L14
 
 ## src/services/helper.ts (17 lines) - helper (services)
 - `ApiError` (export class) L1

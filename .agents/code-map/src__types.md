@@ -39,12 +39,21 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
 - `StayCreateRequest` (export interface) L85
 - `formatUnitLabel` (export function) L102 - Unit 2605" for a bare number, and a label that already says what it is ("Unit 1", "Suite 4B", "#12") is left alone.
 
-## src/types/floorMap.ts (79 lines) - floor map (types)
-- `FloorMapRender` (export interface) L1
-- `FloorMapQuestion` (export interface) L16
-- `FloorMapAnalysis` (export interface) L24
-- `FloorMapDesignStrategy` (export interface) L52
-- `FloorMapProject` (export interface) L62
+## src/types/floorMap.ts (191 lines) - floor map (types)
+- `WallMeshPolygon` (export interface) L1
+- `WallMeshData` (export interface) L6
+- `FloorMapRender` (export interface) L13
+- `FloorMapQuestion` (export interface) L29
+- `FloorMapAnalysis` (export interface) L37
+- `FloorMapDesignStrategy` (export interface) L68
+- `SceneWall` (export interface) L78
+- `SceneDoor` (export interface) L89
+- `SceneRoom` (export interface) L97
+- `SceneFurniture` (export interface) L106
+- `FloorMapScene` (export interface) L121
+- `LayoutIssue` (export interface) L135
+- `LayoutEvaluation` (export interface) L146
+- `FloorMapProject` (export interface) L172
 
 ## src/types/notifications.ts (16 lines) - notifications (types)
 - `Notification` (export interface) L1

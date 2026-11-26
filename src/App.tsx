@@ -13,7 +13,6 @@ const AppShell = lazy(() => import("./components/AppShell/AppShell"));
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const PropertiesPage = lazy(() => import("./pages/RealEstate/PropertiesPage"));
 const BookingsPage = lazy(() => import("./pages/RealEstate/BookingsPage"));
-const FloorMapPage = lazy(() => import("./pages/RealEstate/FloorMapPage"));
 
 const Users = lazy(() => import("./pages/Configurations/Users"));
 const Roles = lazy(() => import("./pages/Configurations/Roles"));
@@ -109,15 +108,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/real-estate/floor-map"
-                element={
-                  <ProtectedRoute navigationCode="REAL_ESTATE_PROPERTIES">
-                    <FloorMapPage />
-                  </ProtectedRoute>
-                }
-              />
-
               {/* Configuration & RBAC Routes */}
               <Route path="/configuration" element={<Navigate to="/configurations/users" replace />} />
               <Route path="/configurations" element={<Navigate to="/configurations/users" replace />} />

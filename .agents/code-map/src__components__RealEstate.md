@@ -4,6 +4,10 @@
 
 Each symbol shows its start line (`L<n>`); read from there to the next symbol's line, not the whole file.
 
+## src/components/RealEstate/CopyAddressButton.tsx (45 lines) - copy address button (components  real estate)
+- `fullPropertyAddress` (function) L7
+- `CopyAddressButton` (export function) L13
+
 ## src/components/RealEstate/ManagementResearchPanel.tsx (95 lines) - The outcome of the dedicated building-management research: one row per field, then what was actually searched.
 - `ManagementResearchPanel` (export function) L26 - The outcome of the dedicated building-management research: one row per field, then what was actually searched.
 
@@ -18,6 +22,11 @@ Each symbol shows its start line (`L<n>`); read from there to the next symbol's 
 - `base` (const) L36
 - `PropertyDocuments` (export function) L39 - Documents of one property: a drag-and-drop upload area, the list, and preview / download / delete.
 - `PreviewDialog` (function) L160
+
+## src/components/RealEstate/PropertyFloorPlanSection.tsx (125 lines) - property floor plan section (components  real estate)
+- `isWallMesh` (function) L13
+- `PropertyFloorPlanSectionProps` (interface) L17
+- `PropertyFloorPlanSection` (export function) L23
 
 ## src/components/RealEstate/PropertyForm.tsx (304 lines) - One badge per item.
 - `TagList` (function) L12 - One badge per item.
